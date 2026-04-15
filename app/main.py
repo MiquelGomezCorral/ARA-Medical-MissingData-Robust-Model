@@ -6,12 +6,14 @@ from src.config import Configuration
 from maikol_utils.other_utils import args_to_dataclass
 from maikol_utils.print_utils import print_separator
 
-def cmd_read_extract(args: argparse.Namespace):
-    """Call read_extract_from_config_list with the given args."""
+from scripts import convert_niigz_to_tensor
+
+def cmd_convert_to_tensor(args: argparse.Namespace):
+    """Call convert_niigz_to_tensor with the given args."""
     CONFIG: Configuration = args_to_dataclass(args, Configuration)
-    print_separator("START ...", sep_type="START")
-    ...
-    print_separator("END ...", sep_type="START")
+    print_separator("START CONVERT TO TENSOR", sep_type="START")
+    convert_niigz_to_tensor(CONFIG)
+    print_separator("END CONVERT TO TENSOR", sep_type="START")
 
 def cmd_test(args):
     """Call test functions."""
@@ -31,15 +33,8 @@ if __name__ == "__main__":
     # ======================================================================================
     #                                       read_extract
     # ======================================================================================
-    p_read = subparsers.add_parser("read-extract", help="Read and extract from config list")
-    p_read.add_argument(
-        "-d", "--dataset_name", type=str, default="Nuelas", help="Name of raw data folder"
-    )
-    p_read.add_argument("-m", "--max_files", type=int, default=None, help="Max files to load")
-    p_read.add_argument(
-        "-l", "--use_llm", action="store_false", default=True, help="Disable LLM extraction"
-    )
-    p_read.set_defaults(func=cmd_read_extract)
+    p_read = subparsers.add_parser("convert-to-tensor", help="Convert NIfTI files to PyTorch tensors")
+    p_read.set_defaults(func=cmd_convert_to_tensor)
 
     # ======================================================================================
     #                                       test

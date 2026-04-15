@@ -35,8 +35,8 @@ To start a new project using this structure:
 Run the following commands to create your local environment and install dependencies:
 
 ```bash
-conda create --name MY_env python=3.13 -y
-conda activate MY_env
+conda create --name ARA_env python=3.13 -y
+conda activate ARA_env
 
 # Install uv global on you pc or only on this env
 # if only on this env:
@@ -47,7 +47,7 @@ uv pip install -r requirements.txt
 pip install -e .
 
 uv pip install ipykernel
-python -m ipykernel install --user --name=MY_env --display-name "MY_env (Conda)"
+python -m ipykernel install --user --name=ARA_env --display-name "ARA_env (Conda)"
 ```
 ### Dataset Source
 Link: Insert Link Here
@@ -84,8 +84,8 @@ Para iniciar un nuevo proyecto usando esta estructura:
 Ejecuta los siguientes comandos para crear tu entorno local e instalar las dependencias:
 
 ```bash
-conda create --name MY_env python=3.13 -y
-conda activate MY_env
+conda create --name ARA_env python=3.13 -y
+conda activate ARA_env
 
 # Install uv global on you pc or only on this env
 # if only on this env:
@@ -96,7 +96,7 @@ uv pip install -r requirements.txt
 pip install -e .
 
 uv pip install ipykernel
-python -m ipykernel install --user --name=MY_env --display-name "MY_env (Conda)"
+python -m ipykernel install --user --name=ARA_env --display-name "ARA_env (Conda)"
 ```
 ### Fuente dataset
 Link: Añade aquí el link a tu dataset
