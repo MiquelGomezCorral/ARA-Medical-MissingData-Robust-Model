@@ -6,11 +6,18 @@ from torch.utils.data import Dataset
 from src.config import Configuration
 
 class UPennGBMDataset(Dataset):
+    '''
+        bins = [0, 180, 365, 730, float('inf')]
+        labels = [0, 1, 2, 3] # Short, Mid, Long, Exceptional
+    '''
     def __init__(self, CONFIG: Configuration, transform=None):
         self.transform = transform
         
         self.tensor_dir = CONFIG.mr_nf_tensors
         self.mr_data = CONFIG.mr_data
+
+        self.bins = CONFIG.bins
+        self.labels = CONFIG.labels
         self.process_tabular()
         
 
@@ -61,14 +68,18 @@ class UPennGBMDataset(Dataset):
         # ===================================================================================
         #                             CLEAN AND PREPARE SURVIVAL DATA
         # ===================================================================================
-        # 1. Coerce invalid strings to NaN
-        df['Survival_from_surgery_days_UPDATED'] = pd.to_numeric(df['Survival_from_surgery_days_UPDATED'], errors='coerce')
 
-        # 2. Drop rows where survival is NaN
-        df = df.dropna(subset=['Survival_from_surgery_days_UPDATED'])
+        # Ensure numerical
+        df['Survival_days'] = pd.to_numeric(df['Survival_from_surgery_days_UPDATED'], errors='coerce')
+        df = df.dropna(subset=['Survival_days'])
 
-        # 3. Now safe to convert to int
-        df['Survival_from_surgery_days_UPDATED'] = (df['Survival_from_surgery_days_UPDATED'] > 365).astype(int)
+        # Define bins and labels
+        # bins [0, 180, 365, 730, infinity]
+      
+        df['Survival_Class'] = pd.cut(df['Survival_days'], bins=self.bins, labels=self.labels, include_lowest=True)
+        
+        # Cast to int for PyTorch CrossEntropyLoss
+        df['Survival_Class'] = df['Survival_Class'].astype(int)
 
 
         # ===================================================================================
@@ -76,7 +87,8 @@ class UPennGBMDataset(Dataset):
         # ===================================================================================
         # Gender (no missing data)
         df['Gender'] = df['Gender'].map({'F': 0, 'M': 1}).astype(int)
-        
+        df['Age_at_scan_years'] = df['Age_at_scan_years'].astype(float) / 100.0
+
         # DUMMIES
         df['KPS'] = pd.to_numeric(df['KPS'], errors='coerce')
         # VERY LITTLE DATA, so keep it in just 3 beans
@@ -105,7 +117,7 @@ class UPennGBMDataset(Dataset):
             if df[col].dtype == 'bool':
                 df[col] = df[col].astype(int)
 
-        self.label_cols = 'Survival_from_surgery_days_UPDATED'
+        self.label_cols = 'Survival_Class'
         self.tabular_cols = [
             'Gender',
             'Age_at_scan_years',

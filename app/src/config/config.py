@@ -36,6 +36,10 @@ class Configuration:
     exp_name: str = "base_name"
     seed:     int = 42
 
+    bins = [0, 180, 365, 730, float('inf')]
+    labels = [0, 1, 2, 3] # Short, Mid, Long, Exceptional
+
+
     gym_id:          str = None
     learning_rate: float = 2.5e-4
     total_timesteps: int = 25_000
