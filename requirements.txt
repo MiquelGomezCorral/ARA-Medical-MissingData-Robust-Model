@@ -2,3 +2,5 @@ maikol-utils>=0.8.0
 dotenv>=0.9.9
 setuptools>=80.9.0
 PyYAML>=6.0
+pytorch-lightning>=2.2.0
+torchvision>=0.20.0

@@ -28,6 +28,11 @@ class Configuration:
     mr_nf_structural: str = os.path.join(mr_nf_path, "images_structural")
     mr_nf_segm: str = os.path.join(mr_nf_path, "images_segm")
     mr_nf_tensors: str = os.path.join(mr_nf_path, "images_tensors")
+    mr_nf_tensors_96: str = os.path.join(mr_nf_path, "images_tensors_96")
+
+    tabular_ids_path: str = os.path.join(DATA_PATH, "tabular_ids.json")
+    radiomic_ids_path: str = os.path.join(DATA_PATH, "radiomic_ids.json")
+    with_all_ids_path: str = os.path.join(DATA_PATH, "with_all_ids.json")
 
     # ===================================================================
     #                       PARAMETER
@@ -36,9 +41,13 @@ class Configuration:
     exp_name: str = "base_name"
     seed:     int = 42
 
-    bins = [0, 180, 365, 730, float('inf')]
-    labels = [0, 1, 2, 3] # Short, Mid, Long, Exceptional
+    bins = [0, 365, float('inf')]
+      # bins = [0, 180, 365, 730, float('inf')]
+    # labels = [0, 1, 2, 3] # Short, Mid, Long, Exceptional
+    labels = [0, 1] # Short vs Long
 
+    test_split: float = 51
+    val_split:  float = 51
 
     gym_id:          str = None
     learning_rate: float = 2.5e-4
@@ -46,6 +55,7 @@ class Configuration:
 
     torch_deterministic: bool = True
     cuda:                bool = True
+    gpu_index:        int | None = None
 
     track_run:         bool = False
     wandb_project_name: str = "RL"
@@ -55,7 +65,8 @@ class Configuration:
         # Basic setup: create folders and load yaml config if provided
         make_dirs([
             self.DATA_PATH, self.MODELS_PATH, self.LOGS_PATH, self.CONFIGS_PATH,
-            self.mr_path, self.mr_nf_path, self.mr_nf_structural, self.mr_nf_segm, self.mr_nf_tensors
+            self.mr_path, self.mr_nf_path, self.mr_nf_structural, self.mr_nf_segm, self.mr_nf_tensors,
+            self.mr_nf_tensors_96
         ])
         if self.yaml_config_name:
             self._load_yaml_configuration(self.yaml_config_name)

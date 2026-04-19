@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
-
+from tqdm import tqdm
 from src.config import Configuration
 
 class UPennGBMDataset(Dataset):
@@ -10,25 +10,46 @@ class UPennGBMDataset(Dataset):
         bins = [0, 180, 365, 730, float('inf')]
         labels = [0, 1, 2, 3] # Short, Mid, Long, Exceptional
     '''
-    def __init__(self, CONFIG: Configuration, transform=None):
+    def __init__(self, CONFIG: Configuration, transform=None, partition='train', cache=False):
         self.transform = transform
-        
-        self.tensor_dir = CONFIG.mr_nf_tensors
+        self.partition = partition
+
+        self.CONFIG = CONFIG
+
+        self.tensor_dir = CONFIG.mr_nf_tensors_96
         self.mr_data = CONFIG.mr_data
 
         self.bins = CONFIG.bins
         self.labels = CONFIG.labels
         self.process_tabular()
-        
+    
+
+        self.cache = {}
+        if cache:
+            print(f"[{partition}] caching {len(self.df)} tensors in RAM...")
+            for _, row in tqdm(self.df.iterrows(), total=len(self.df), desc=f"Caching {partition}"):
+                path = os.path.join(self.tensor_dir, f"{row['ID']}.pt")
+                self.cache[row['ID']] = torch.load(path, weights_only=True)
+            print(f"[{partition}] cache ready.")
+            
 
     def __len__(self):
-        return len(self.patient_ids)
+        return len(self.df)
 
     def __getitem__(self, idx):
         patient_row = self.df.iloc[idx]
-        # 1. Load Image Tensor (C, X, Y, Z)
-        tensor_path = os.path.join(self.tensor_dir, f"{patient_row['ID']}.pt")
-        image = torch.load(tensor_path, weights_only=True)
+        pid = patient_row['ID']
+    
+        # Load from cache or disk
+        image = self.cache[pid] if self.cache else torch.load(
+            os.path.join(self.tensor_dir, f"{pid}.pt"), weights_only=True
+        )
+
+        for c in range(image.shape[0]):
+            channel = image[c]
+            mean = channel.mean()
+            std  = channel.std().clamp(min=1e-5)   # clamp avoids div-by-zero on blank channels
+            image[c] = (channel - mean) / std
 
         # 2. Get Tabular and Label
         tabular = torch.tensor(
@@ -48,6 +69,7 @@ class UPennGBMDataset(Dataset):
             'tabular': tabular, # Shape: (N_features,)
             'label': label      # Scalar
         }
+    
     
 
     def process_tabular(self):
@@ -126,5 +148,28 @@ class UPennGBMDataset(Dataset):
             'MGMT_Methylated', 'MGMT_Unmethylated', 'MGMT_Unk',
             'GTR_Y', 'GTR_N', 'GTR_Unk'
         ]
-        self.df = df[['ID'] + self.tabular_cols + [self.label_cols]]
-        
+
+        # ADD THIS BLOCK: Ensure all required columns exist
+        for col in self.tabular_cols:
+            if col not in df.columns:
+                df[col] = 0
+
+        # Now this will never throw a KeyError
+        df = df[['ID'] + self.tabular_cols + [self.label_cols]]
+        df.fillna(0, inplace=True)
+        df = df.sample(frac=1, random_state=42).reset_index(drop=True)
+
+        test_end = int(self.CONFIG.test_split)
+        val_end = test_end + int(self.CONFIG.val_split)
+
+        if self.partition == 'test':
+            self.df = df.iloc[:test_end]
+            
+        elif self.partition == 'val':
+            self.df = df.iloc[test_end:val_end]
+            
+        elif self.partition == 'train':
+            self.df = df.iloc[val_end:]
+            
+        else:
+            raise ValueError(f"Invalid partition: {self.partition}")
