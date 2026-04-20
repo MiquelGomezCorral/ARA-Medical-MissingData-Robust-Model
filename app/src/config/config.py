@@ -49,8 +49,8 @@ class Configuration:
     test_split: float = 51
     val_split:  float = 51
 
-    ssl_epochs = 20
-    survival_epochs = 20
+    ssl_epochs: int = 20
+    survival_epochs: int = 20
     ssl_checkpoint_name: str = "ssl_checkpoint.pt"
     ssl_checkpoint_path: str = MODELS_PATH
     survival_checkpoint_name: str = "survival_checkpoint.pt"

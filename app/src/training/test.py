@@ -40,3 +40,13 @@ def test_model(CONFIG: Configuration, survival_module: torch.nn.Module, test_loa
     print_color(f" - Test Precision: {precision:.4f}", 'green')
     print_color(f" - Test Recall: {recall:.4f}", 'green')
     print_color(f" - Test Accuracy: {accuracy:.4f}", 'green')
+
+    return {
+        'predictions': all_preds,
+        'f1': f1,
+        'precision': precision,
+        'recall': recall,
+        'accuracy': accuracy
+    }
+
+

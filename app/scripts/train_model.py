@@ -28,7 +28,7 @@ def train_3d_vit(CONFIG: Configuration):
     )
 
     print_separator("Starting Testing", sep_type='SUPER')
-    test_model(CONFIG, survival_module, test_loader)
+    results = test_model(CONFIG, survival_module, test_loader)
 
 
 def prepare_data(CONFIG: Configuration):
