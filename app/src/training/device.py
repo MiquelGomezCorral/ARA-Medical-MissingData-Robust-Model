@@ -7,7 +7,7 @@ from src.config import Configuration
 
 def resolve_lightning_accelerator(config: Configuration):
     """Return the Lightning accelerator, devices value, and a human-readable label."""
-    if config.cuda and torch.cuda.is_available():
+    if torch.cuda.is_available():
         gpu_index = getattr(config, "gpu_index", None)
         visible_gpu_count = torch.cuda.device_count()
 

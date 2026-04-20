@@ -49,17 +49,12 @@ class Configuration:
     test_split: float = 51
     val_split:  float = 51
 
-    gym_id:          str = None
-    learning_rate: float = 2.5e-4
-    total_timesteps: int = 25_000
-
-    torch_deterministic: bool = True
-    cuda:                bool = True
-    gpu_index:        int | None = None
-
-    track_run:         bool = False
-    wandb_project_name: str = "RL"
-    wandb_entity:       str = None
+    ssl_epochs = 20
+    survival_epochs = 20
+    ssl_checkpoint_name: str = "ssl_checkpoint.pt"
+    ssl_checkpoint_path: str = MODELS_PATH
+    survival_checkpoint_name: str = "survival_checkpoint.pt"
+    survival_checkpoint_path: str = MODELS_PATH
 
     def __post_init__(self):
         # Basic setup: create folders and load yaml config if provided
@@ -71,10 +66,10 @@ class Configuration:
         if self.yaml_config_name:
             self._load_yaml_configuration(self.yaml_config_name)
 
-        # More stuff 
-        ...
+        # Names
+        self.ssl_checkpoint_path = os.path.join(self.MODELS_PATH, self.ssl_checkpoint_name)
+        self.survival_checkpoint_path = os.path.join(self.MODELS_PATH, self.survival_checkpoint_name)
 
-        
     def _load_yaml_configuration(self, yaml_file: str) -> None:
         """Load config values from a YAML file under CONFIGS_PATH."""
         config_path = os.path.join(self.CONFIGS_PATH, yaml_file)
