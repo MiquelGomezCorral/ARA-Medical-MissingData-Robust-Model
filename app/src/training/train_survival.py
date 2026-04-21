@@ -35,7 +35,11 @@ def train_stage_survival(
         label_smoothing=0.1,
     )
 
-    survival_module.model.load_pretrained_encoder(ssl_checkpoint_path, strict=False)
+    survival_module.model.load_pretrained_encoder(
+        ssl_checkpoint_path,
+        strict=False,
+        freeze=CONFIG.freeze_encoder
+    )
     survival_accelerator, survival_devices, survival_device_label = resolve_lightning_accelerator(CONFIG)
     print(f" - [Survival] device: {survival_device_label}")
 

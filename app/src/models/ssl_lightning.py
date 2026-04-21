@@ -47,12 +47,22 @@ class SSLPretrainingLightningModule(L.LightningModule):
         self.weight_decay = weight_decay
         self.temperature = temperature
 
-    def forward(self, x_i: torch.Tensor, x_j: torch.Tensor) -> tuple[torch.Tensor, float, float]:
-        return self.model(x_i, x_j, temperature=self.temperature)
+    def forward(
+        self,
+        x_i: torch.Tensor,
+        x_j: torch.Tensor,
+        target: torch.Tensor | None = None,
+    ) -> tuple[torch.Tensor, float, float]:
+        return self.model(x_i, x_j, target=target, temperature=self.temperature)
 
     def training_step(self, batch, batch_idx: int):
-        x_i, x_j = batch
-        loss, l_contrast, l_recon = self(x_i, x_j)
+        if len(batch) == 3:
+            x_i, x_j, target = batch
+        else:
+            x_i, x_j = batch
+            target = None
+
+        loss, l_contrast, l_recon = self(x_i, x_j, target=target)
         self.log("train_loss", loss, prog_bar=True, on_step=False, on_epoch=True)
         self.log("train_contrast", l_contrast, prog_bar=False, on_step=False, on_epoch=True)
         self.log("train_recon", l_recon, prog_bar=False, on_step=False, on_epoch=True)

@@ -85,10 +85,16 @@ class SSLPretraining(nn.Module):
         self,
         x_i: torch.Tensor,
         x_j: torch.Tensor,
+        target: torch.Tensor | None = None,
         temperature: float = 0.5,
     ) -> tuple[torch.Tensor, float, float]:
         x_i = self._resize_input(x_i)
         x_j = self._resize_input(x_j)
+        if target is None:
+            target = x_i
+        else:
+            target = self._resize_input(target)
+
         tokens_i = self.encoder(x_i)
         tokens_j = self.encoder(x_j)
 
@@ -97,9 +103,14 @@ class SSLPretraining(nn.Module):
         l_contrast = self._nt_xent_loss(z_i, z_j, temperature)
 
         patch_tokens_i = tokens_i[:, 1:]
-        recon = self.reconstruction_head(patch_tokens_i)
-        target = self._extract_patches(x_i)
-        l_recon = F.mse_loss(recon, target)
+        patch_tokens_j = tokens_j[:, 1:]
+        recon_i = self.reconstruction_head(patch_tokens_i)
+        recon_j = self.reconstruction_head(patch_tokens_j)
+        target_patches = self._extract_patches(target)
+        l_recon = 0.5 * (
+            F.mse_loss(recon_i, target_patches) +
+            F.mse_loss(recon_j, target_patches)
+        )
 
         l_ssl = l_recon + l_contrast * l_recon
         return l_ssl, l_contrast.item(), l_recon.item()

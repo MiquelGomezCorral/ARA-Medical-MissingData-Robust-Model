@@ -6,7 +6,8 @@ from src.config import Configuration
 from maikol_utils.other_utils import args_to_dataclass
 from maikol_utils.print_utils import print_separator
 
-from scripts import convert_niigz_to_tensor, train_3d_vit
+from scripts import convert_niigz_to_tensor, train_3d_vit, train_ssl_pretraining, prepare_data, prepare_survival_data
+from src.training import train_stage_survival, test_model
 
 def cmd_convert_to_tensor(args: argparse.Namespace):
     """Call convert_niigz_to_tensor with the given args."""
@@ -20,7 +21,21 @@ def cmd_train(args: argparse.Namespace):
     """Train the SSL encoder, survival model, or both."""
     CONFIG: Configuration = args_to_dataclass(args, Configuration)
     print_separator("START TRAINING", sep_type="START")
-    train_3d_vit(CONFIG)
+    if args.stage == "ssl":
+        train_ssl_pretraining(CONFIG)
+    elif args.stage == "survival":
+        survival_dm, train_loader, val_loader, test_loader = prepare_survival_data(CONFIG)
+        survival_module = train_stage_survival(
+            CONFIG,
+            args.ssl_checkpoint or CONFIG.ssl_checkpoint_path,
+            survival_dm,
+            train_loader,
+            val_loader,
+            test_loader,
+        )
+        test_model(CONFIG, survival_module, test_loader)
+    else:
+        train_3d_vit(CONFIG)
     print_separator("END TRAINING", sep_type="START")
 
 # ======================================================================================

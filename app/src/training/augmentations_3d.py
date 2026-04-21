@@ -13,6 +13,68 @@ import torch
 import torch.nn.functional as F
 
 
+class RandomPatchSwap3D:
+    """Swap a pair of random cubic patches inside the same volume."""
+
+    def __init__(self, patch_size: int = 12, p: float = 0.5, swaps: int = 1):
+        self.patch_size = patch_size
+        self.p = p
+        self.swaps = swaps
+
+    def _sample_start(self, limit: int, patch_size: int) -> int:
+        if limit <= patch_size:
+            return 0
+        return random.randint(0, limit - patch_size)
+
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
+        if random.random() >= self.p:
+            return x
+
+        x = x.clone()
+        _, height, width, depth = x.shape
+        patch_size = min(self.patch_size, height, width, depth)
+
+        for _ in range(self.swaps):
+            h1 = self._sample_start(height, patch_size)
+            w1 = self._sample_start(width, patch_size)
+            d1 = self._sample_start(depth, patch_size)
+            h2 = self._sample_start(height, patch_size)
+            w2 = self._sample_start(width, patch_size)
+            d2 = self._sample_start(depth, patch_size)
+
+            patch_1 = x[:, h1:h1 + patch_size, w1:w1 + patch_size, d1:d1 + patch_size].clone()
+            patch_2 = x[:, h2:h2 + patch_size, w2:w2 + patch_size, d2:d2 + patch_size].clone()
+            x[:, h1:h1 + patch_size, w1:w1 + patch_size, d1:d1 + patch_size] = patch_2
+            x[:, h2:h2 + patch_size, w2:w2 + patch_size, d2:d2 + patch_size] = patch_1
+
+        return x
+
+
+class RandomCutout3D:
+    """Mask a random cubic region of the input volume."""
+
+    def __init__(self, min_ratio: float = 0.1, max_ratio: float = 0.25, p: float = 0.5):
+        self.min_ratio = min_ratio
+        self.max_ratio = max_ratio
+        self.p = p
+
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
+        if random.random() >= self.p:
+            return x
+
+        x = x.clone()
+        _, height, width, depth = x.shape
+        ratio = random.uniform(self.min_ratio, self.max_ratio)
+        cutout_size = max(1, int(min(height, width, depth) * ratio))
+
+        h0 = 0 if height <= cutout_size else random.randint(0, height - cutout_size)
+        w0 = 0 if width <= cutout_size else random.randint(0, width - cutout_size)
+        d0 = 0 if depth <= cutout_size else random.randint(0, depth - cutout_size)
+
+        x[:, h0:h0 + cutout_size, w0:w0 + cutout_size, d0:d0 + cutout_size] = 0
+        return x
+
+
 class RandomFlip3D:
     """Randomly flip the volume along one or more spatial axes."""
 
@@ -111,6 +173,21 @@ class MRIAugmentPipeline:
             RandomIntensityScaling(lo=intensity_lo, hi=intensity_hi),
             RandomGaussianNoise(max_std=noise_std),
             RandomCrop3D(target_size=vol_size, min_scale=crop_scale),
+        ]
+
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
+        for t in self.transforms:
+            x = t(x)
+        return x
+
+
+class BraTSSSLAugmentPipeline:
+    """Apply the BraTS-specific SSL corruptions used for pretraining views."""
+
+    def __init__(self, patch_size: int = 12, cutout_min_ratio: float = 0.1, cutout_max_ratio: float = 0.25):
+        self.transforms = [
+            RandomPatchSwap3D(patch_size=patch_size, p=0.8, swaps=1),
+            RandomCutout3D(min_ratio=cutout_min_ratio, max_ratio=cutout_max_ratio, p=0.8),
         ]
 
     def __call__(self, x: torch.Tensor) -> torch.Tensor:

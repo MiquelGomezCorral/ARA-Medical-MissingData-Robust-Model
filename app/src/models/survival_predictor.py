@@ -61,7 +61,7 @@ class MultimodalSurvivalPredictor(nn.Module):
         logits = self.classifier(self.dropout(pooled))
         return logits
 
-    def load_pretrained_encoder(self, checkpoint_path: str, strict: bool = False):
+    def load_pretrained_encoder(self, checkpoint_path: str, strict: bool = False, freeze: bool = False):
         ckpt = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
         sd = ckpt.get("model_state_dict", ckpt.get("state_dict", ckpt))
         encoder_sd = {
@@ -78,3 +78,8 @@ class MultimodalSurvivalPredictor(nn.Module):
             }
         missing, unexpected = self.image_encoder.load_state_dict(encoder_sd, strict=strict)
         print(f"[pretrained encoder] missing={len(missing)}  unexpected={len(unexpected)}")
+
+        if freeze:
+            for parameter in self.image_encoder.parameters():
+                parameter.requires_grad = False
+            self.image_encoder.eval()
