@@ -36,10 +36,10 @@ def test_model(CONFIG: Configuration, survival_module: torch.nn.Module, test_loa
     recall = recall_score(all_labels, all_preds, average='weighted', zero_division=0)
     accuracy = accuracy_score(all_labels, all_preds)
 
-    print_color(f" - Test F1 Score: {f1:.4f}", 'green')
+    print_color(f" - Test F1 Score:  {f1:.4f}", 'green')
     print_color(f" - Test Precision: {precision:.4f}", 'green')
-    print_color(f" - Test Recall: {recall:.4f}", 'green')
-    print_color(f" - Test Accuracy: {accuracy:.4f}", 'green')
+    print_color(f" - Test Recall:    {recall:.4f}", 'green')
+    print_color(f" - Test Accuracy:  {accuracy:.4f}", 'green')
 
     return {
         'predictions': all_preds,

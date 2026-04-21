@@ -1,5 +1,3 @@
-"""Fast training script for UPenn GBM tensors with Lightning and 3D ResNet modules."""
-
 import torch
 from src.data import SSLDataModule
 from torch.utils.data import DataLoader
@@ -9,9 +7,10 @@ from maikol_utils.print_utils import print_separator
 from src.data import UPennGBMDataModule
 from src.config import Configuration
 from src.training import train_stage_ssl, train_stage_survival, test_model
-
+from src.utils import set_all_seeds
 
 def train_3d_vit(CONFIG: Configuration):
+    set_all_seeds(CONFIG.seed)
     print_separator("Preparing Data", sep_type='LONG')
     ssl_train_loader, survival_dm, train_loader, val_loader, test_loader = prepare_data(CONFIG)
 
@@ -94,9 +93,9 @@ def prepare_data(CONFIG: Configuration):
 
 
     # ======================== Log ========================
-    print(f" - SSL Train samples: {len(ssl_dm.train_ds):>5}")
+    print(f" - SSL Train samples:      {len(ssl_dm.train_ds):>5}")
     print(f" - Survival Train samples: {len(survival_dm.train_ds):>5}")
-    print(f" - Survival Val samples: {len(survival_dm.val_ds):>5}")
-    print(f" - Survival Test samples: {len(survival_dm.test_ds):>5}")
+    print(f" - Survival Val samples:   {len(survival_dm.val_ds):>5}")
+    print(f" - Survival Test samples:  {len(survival_dm.test_ds):>5}")
 
     return ssl_train_loader, survival_dm, train_loader, val_loader, test_loader

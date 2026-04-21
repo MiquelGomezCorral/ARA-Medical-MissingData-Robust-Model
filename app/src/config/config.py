@@ -30,6 +30,12 @@ class Configuration:
     mr_nf_tensors: str = os.path.join(mr_nf_path, "images_tensors")
     mr_nf_tensors_96: str = os.path.join(mr_nf_path, "images_tensors_96")
 
+    brats_path: str = os.path.join(DATA_PATH, "BraTS")
+    brats_path_structural: str = os.path.join(brats_path, "BraTS2021_Training_Data")
+    brats_tensors: str = os.path.join(brats_path, "images_tensors")
+    brats_tensors_96: str = os.path.join(brats_path, "images_tensors_96")
+
+
     tabular_ids_path: str = os.path.join(DATA_PATH, "tabular_ids.json")
     radiomic_ids_path: str = os.path.join(DATA_PATH, "radiomic_ids.json")
     with_all_ids_path: str = os.path.join(DATA_PATH, "with_all_ids.json")
