@@ -1,4 +1,6 @@
 import os
+import json
+import pickle
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
@@ -18,9 +20,11 @@ class UPennGBMDataset(Dataset):
 
         self.tensor_dir = CONFIG.mr_nf_tensors_96
         self.mr_data = CONFIG.mr_data
+        self.dropout_data_path = CONFIG.dropout_data_path
 
         self.bins = CONFIG.bins
         self.labels = CONFIG.labels
+        self.dropout_reference, self.dropout_by_id = self._load_dropout_data()
         self.process_tabular()
     
 
@@ -28,8 +32,7 @@ class UPennGBMDataset(Dataset):
         if cache:
             print(f"[{partition}] caching {len(self.df)} tensors in RAM...")
             for _, row in tqdm(self.df.iterrows(), total=len(self.df), desc=f"Caching {partition}"):
-                path = os.path.join(self.tensor_dir, f"{row['ID']}.pt")
-                self.cache[row['ID']] = torch.load(path, weights_only=True)
+                self.cache[row['ID']] = self._load_sample(row['ID'])
             print(f"[{partition}] cache ready.")
             
 
@@ -41,21 +44,18 @@ class UPennGBMDataset(Dataset):
         pid = patient_row['ID']
     
         # Load from cache or disk
-        image = self.cache[pid] if self.cache else torch.load(
-            os.path.join(self.tensor_dir, f"{pid}.pt"), weights_only=True
-        )
+        image = self.cache[pid] if self.cache else self._load_sample(pid)
 
-        for c in range(image.shape[0]):
-            channel = image[c]
-            mean = channel.mean()
-            std  = channel.std().clamp(min=1e-5)   # clamp avoids div-by-zero on blank channels
-            image[c] = (channel - mean) / std
+        image = self._normalize_image_dict(image)
+        image, image_mask = self._apply_image_mask(pid, image)
 
-        # 2. Get Tabular and Label
-        tabular = torch.tensor(
+        # 2. Get Tabular, mask, and Label
+        tabular_values = torch.tensor(
             patient_row[self.tabular_cols].values.astype('float32'),
             dtype=torch.float32
         )
+        tabular_mask = torch.ones(len(self.tabular_cols), dtype=torch.float32)
+        tabular_values, tabular_mask = self._apply_tabular_mask(pid, tabular_values, tabular_mask)
         label = torch.tensor(
             patient_row[self.label_cols],
             dtype=torch.long
@@ -65,12 +65,107 @@ class UPennGBMDataset(Dataset):
             image = self.transform(image)
 
         return {
-            'image': image,     # Shape: (4, X, Y, Z)
-            'tabular': tabular, # Shape: (N_features,)
-            'label': label      # Scalar
+            'image': image,             # Dict[str, Tensor]
+            'image_mask': image_mask,   # Dict[str, Tensor(0/1)]
+            'tabular': tabular_values,  # Shape: (N_features,)
+            'tabular_mask': tabular_mask,
+            'label': label             # Scalar
         }
     
     
+
+    def _load_dropout_data(self):
+        with open(self.dropout_data_path, "r", encoding="utf-8") as f:
+            dropout_data = json.load(f)
+
+        return dropout_data.get("reference", {}), dropout_data.get("ids", {})
+
+
+    def _sample_path(self, pid):
+        pkl_path = os.path.join(self.tensor_dir, f"{pid}.pkl")
+        if os.path.exists(pkl_path):
+            return pkl_path
+
+        # pt_path = os.path.join(self.tensor_dir, f"{pid}.pt")
+        # if os.path.exists(pt_path):
+        #     return pt_path
+
+        raise FileNotFoundError(f"No tensor file found for {pid} in {self.tensor_dir}")
+
+
+    def _load_sample(self, pid):
+        path = self._sample_path(pid)
+        with open(path, "rb") as f:
+            sample = pickle.load(f)
+
+        if not isinstance(sample, dict):
+            raise ValueError(f"Expected a dict sample for {pid}, got {type(sample).__name__}")
+
+        return sample
+
+
+    def _normalize_image_dict(self, image_dict):
+        normalized = {}
+        for feature_name, tensor in image_dict.items():
+            channel = tensor.clone().float()
+            mean = channel.mean()
+            std = channel.std().clamp(min=1e-5)
+            normalized[feature_name] = (channel - mean) / std
+        return normalized
+
+
+    def _apply_image_mask(self, pid, image_dict):
+        patient_dropout = self.dropout_by_id.get(pid, {})
+        image_mask = {
+            feature_name: torch.tensor(1.0, dtype=torch.float32)
+            for feature_name in image_dict.keys()
+        }
+
+        for feature_name, reference_value in self.dropout_reference.items():
+            if feature_name == "TABULAR":
+                continue
+
+            if feature_name != "RADIOMIC":
+                if patient_dropout.get(feature_name, False) and feature_name in image_dict:
+                    image_dict[feature_name] = torch.zeros_like(image_dict[feature_name])
+                    image_mask[feature_name] = torch.tensor(0.0, dtype=torch.float32)
+                continue
+
+            radiomic_reference = reference_value if isinstance(reference_value, dict) else {}
+            radiomic_dropout = patient_dropout.get("RADIOMIC", {})
+
+            for group_name, group_spec in radiomic_reference.items():
+                if not radiomic_dropout.get(group_name, False):
+                    continue
+
+                prefixes = group_spec[0] if isinstance(group_spec, list) and group_spec else []
+                for feature_key in image_dict.keys():
+                    if any(feature_key.startswith(prefix) for prefix in prefixes):
+                        image_dict[feature_key] = torch.zeros_like(image_dict[feature_key])
+                        image_mask[feature_key] = torch.tensor(0.0, dtype=torch.float32)
+
+        return image_dict, image_mask
+
+
+    def _apply_tabular_mask(self, pid, tabular_values, tabular_mask):
+        patient_dropout = self.dropout_by_id.get(pid, {})
+        tabular_dropout = patient_dropout.get("TABULAR", {})
+        tabular_reference = self.dropout_reference.get("TABULAR", {})
+
+        for group_name, group_spec in tabular_reference.items():
+            if not tabular_dropout.get(group_name, False):
+                continue
+
+            columns = group_spec[0] if isinstance(group_spec, list) and group_spec else []
+            for column_name in columns:
+                if column_name not in self.tabular_cols:
+                    continue
+                column_idx = self.tabular_cols.index(column_name)
+                tabular_values[column_idx] = 0.0
+                tabular_mask[column_idx] = 0.0
+
+        return tabular_values, tabular_mask
+
 
     def process_tabular(self):
         df = pd.read_csv(self.mr_data)
@@ -157,19 +252,31 @@ class UPennGBMDataset(Dataset):
         # Now this will never throw a KeyError
         df = df[['ID'] + self.tabular_cols + [self.label_cols]]
         df.fillna(0, inplace=True)
-        df = df.sample(frac=1, random_state=42).reset_index(drop=True)
 
-        test_end = int(self.CONFIG.test_split)
-        val_end = test_end + int(self.CONFIG.val_split)
+        with open(self.CONFIG.partition_ids_path, "r", encoding="utf-8") as f:
+            partition_ids = json.load(f)
 
-        if self.partition == 'test':
-            self.df = df.iloc[:test_end]
-            
-        elif self.partition == 'val':
-            self.df = df.iloc[test_end:val_end]
-            
-        elif self.partition == 'train':
-            self.df = df.iloc[val_end:]
-            
-        else:
-            raise ValueError(f"Invalid partition: {self.partition}")
+        if self.partition not in partition_ids:
+            raise ValueError(
+                f"Partition '{self.partition}' not found in {self.CONFIG.partition_ids_path}. "
+                f"Available partitions: {list(partition_ids.keys())}"
+            )
+
+        target_ids = partition_ids[self.partition]
+        if not isinstance(target_ids, list):
+            raise ValueError(
+                f"Partition '{self.partition}' must map to a list of IDs in "
+                f"{self.CONFIG.partition_ids_path}"
+            )
+
+        df_by_id = df.set_index('ID')
+        existing_ids = [pid for pid in target_ids if pid in df_by_id.index]
+        missing_ids = [pid for pid in target_ids if pid not in df_by_id.index]
+
+        if missing_ids:
+            print(
+                f"[{self.partition}] Warning: {len(missing_ids)} IDs from partition file "
+                f"are not present in tabular data and will be skipped."
+            )
+
+        self.df = df_by_id.loc[existing_ids].reset_index()

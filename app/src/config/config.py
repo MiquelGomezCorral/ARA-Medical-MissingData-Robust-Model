@@ -41,6 +41,9 @@ class Configuration:
     radiomic_ids_path: str = os.path.join(DATA_PATH, "radiomic_ids.json")
     with_all_ids_path: str = os.path.join(DATA_PATH, "with_all_ids.json")
 
+    partition_ids_path: str = os.path.join(DATA_PATH, "partitions_ids.json")
+    dropout_data_path: str = os.path.join(DATA_PATH, "dropout_data.json")
+
     # ===================================================================
     #                       PARAMETER
     # ===================================================================
@@ -53,8 +56,8 @@ class Configuration:
     # labels = [0, 1, 2, 3] # Short, Mid, Long, Exceptional
     labels = [0, 1] # Short vs Long
 
-    test_split: float = 51
-    val_split:  float = 51
+    test_split: float = 0.1
+    val_split:  float = 0.1
 
     ssl_epochs: int = 20
     survival_epochs: int = 20
