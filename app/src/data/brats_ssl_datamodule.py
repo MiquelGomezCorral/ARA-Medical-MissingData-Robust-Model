@@ -8,7 +8,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 
 from src.config import Configuration
-from src.training.augmentations_3d import BraTSSSLAugmentPipeline, TwoViewTransform
+from src.data.augmentations_3d import BraTSSSLAugmentPipeline, TwoViewTransform
 
 
 class BraTSTensorDataset(Dataset):

@@ -5,8 +5,8 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 
 from src.config import Configuration
-from src.data.UPennGBMDataset import UPennGBMDataset
-from src.training.augmentations_3d import MRIAugmentPipeline, TwoViewTransform
+from .UPennGBMDataset import UPennGBMDataset
+from .augmentations_3d import MRIAugmentPipeline, TwoViewTransform
 
 
 class SSLImageDataset(Dataset):

@@ -5,8 +5,8 @@ import torch
 from torch.utils.data import DataLoader
 
 from src.config import Configuration
-from src.data.UPennGBMDataset import UPennGBMDataset
-
+from .UPennGBMDataset import UPennGBMDataset
+from .augmentations_3d import  SurvivalAugmentPipeline, SurvivalInferencePipeline
 
 class UPennGBMDataModule(L.LightningDataModule):
     """Create train/val/test dataloaders from UPennGBMDataset."""
@@ -23,11 +23,11 @@ class UPennGBMDataModule(L.LightningDataModule):
 
     def setup(self, stage: str | None = None) -> None:
         if stage in (None, "fit"):
-            self.train_ds = UPennGBMDataset(self.config, partition="train")
-            self.val_ds = UPennGBMDataset(self.config, partition="val")
+            self.train_ds = UPennGBMDataset(self.config, partition="train", transform=SurvivalAugmentPipeline())
+            self.val_ds = UPennGBMDataset(self.config, partition="val", transform=SurvivalInferencePipeline())
 
         if stage in (None, "test"):
-            self.test_ds = UPennGBMDataset(self.config, partition="test")
+            self.test_ds = UPennGBMDataset(self.config, partition="test", transform=SurvivalInferencePipeline())
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(

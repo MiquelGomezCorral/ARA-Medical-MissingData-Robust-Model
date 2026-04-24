@@ -53,7 +53,7 @@ def _run_ssl_stage(
             EarlyStopping(
                 monitor="train_loss",
                 mode="min",
-                patience=2,
+                patience=3,
                 min_delta=1e-4,
             ),
         ],

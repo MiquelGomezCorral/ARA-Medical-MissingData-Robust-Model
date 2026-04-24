@@ -46,7 +46,7 @@ class UPennGBMDataset(Dataset):
         # Load from cache or disk
         image = self.cache[pid] if self.cache else self._load_sample(pid)
 
-        image = self._normalize_image_dict(image)
+        # image = self._normalize_image_dict(image)
         image, image_mask = self._apply_image_mask(pid, image)
 
         # 2. Get Tabular, mask, and Label
@@ -65,8 +65,8 @@ class UPennGBMDataset(Dataset):
             image = self.transform(image)
 
         return {
-            'image': image,             # Dict[str, Tensor]
-            'image_mask': image_mask,   # Dict[str, Tensor(0/1)]
+            'image': image,             # expect torch.Size([4, D, D, D]) con D = 96
+            'image_mask': image_mask,   # Shape: (N_channels,)
             'tabular': tabular_values,  # Shape: (N_features,)
             'tabular_mask': tabular_mask,
             'label': label             # Scalar
@@ -104,14 +104,14 @@ class UPennGBMDataset(Dataset):
         return sample
 
 
-    def _normalize_image_dict(self, image_dict):
-        normalized = {}
-        for feature_name, tensor in image_dict.items():
-            channel = tensor.clone().float()
-            mean = channel.mean()
-            std = channel.std().clamp(min=1e-5)
-            normalized[feature_name] = (channel - mean) / std
-        return normalized
+    # def _normalize_image_dict(self, image_dict):
+    #     normalized = {}
+    #     for feature_name, tensor in image_dict.items():
+    #         channel = tensor.clone().float()
+    #         mean = channel.mean()
+    #         std = channel.std().clamp(min=1e-5)
+    #         normalized[feature_name] = (channel - mean) / std
+    #     return normalized
 
 
     def _apply_image_mask(self, pid, image_dict):
@@ -144,7 +144,11 @@ class UPennGBMDataset(Dataset):
                         image_dict[feature_key] = torch.zeros_like(image_dict[feature_key])
                         image_mask[feature_key] = torch.tensor(0.0, dtype=torch.float32)
 
-        return image_dict, image_mask
+        # return image_dict, image_mask
+        keys = list(image_dict.keys())
+        image_tensor = torch.stack([image_dict[k] for k in keys], dim=0)
+        mask_tensor  = torch.stack([image_mask[k] for k in keys], dim=0)
+        return image_tensor, mask_tensor
 
 
     def _apply_tabular_mask(self, pid, tabular_values, tabular_mask):
