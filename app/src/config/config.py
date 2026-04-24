@@ -59,6 +59,9 @@ class Configuration:
     test_split: float = 0.1
     val_split:  float = 0.1
 
+    masked_train: bool = False
+    masked_test: bool = False
+
     ssl_epochs: int = 20
     survival_epochs: int = 20
     freeze_encoder: bool = False

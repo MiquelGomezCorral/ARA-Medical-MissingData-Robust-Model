@@ -13,10 +13,12 @@ class UPennGBMDataset(Dataset):
         labels = [0, 1, 2, 3] # Short, Mid, Long, Exceptional
     '''
     def __init__(self, CONFIG: Configuration, transform=None, partition='train', cache=False):
+        self.CONFIG = CONFIG
+
         self.transform = transform
         self.partition = partition
 
-        self.CONFIG = CONFIG
+        self.apply_mask = CONFIG.masked_train if partition == 'train' else CONFIG.masked_test
 
         self.tensor_dir = CONFIG.mr_nf_tensors_96
         self.mr_data = CONFIG.mr_data
@@ -115,36 +117,37 @@ class UPennGBMDataset(Dataset):
 
 
     def _apply_image_mask(self, pid, image_dict):
-        patient_dropout = self.dropout_by_id.get(pid, {})
         image_mask = {
             feature_name: torch.tensor(1.0, dtype=torch.float32)
             for feature_name in image_dict.keys()
         }
 
-        for feature_name, reference_value in self.dropout_reference.items():
-            if feature_name == "TABULAR":
-                continue
-
-            if feature_name != "RADIOMIC":
-                if patient_dropout.get(feature_name, False) and feature_name in image_dict:
-                    image_dict[feature_name] = torch.zeros_like(image_dict[feature_name])
-                    image_mask[feature_name] = torch.tensor(0.0, dtype=torch.float32)
-                continue
-
-            radiomic_reference = reference_value if isinstance(reference_value, dict) else {}
-            radiomic_dropout = patient_dropout.get("RADIOMIC", {})
-
-            for group_name, group_spec in radiomic_reference.items():
-                if not radiomic_dropout.get(group_name, False):
+        if self.apply_mask:
+            patient_dropout = self.dropout_by_id.get(pid, {})
+            
+            for feature_name, reference_value in self.dropout_reference.items():
+                if feature_name == "TABULAR":
                     continue
 
-                prefixes = group_spec[0] if isinstance(group_spec, list) and group_spec else []
-                for feature_key in image_dict.keys():
-                    if any(feature_key.startswith(prefix) for prefix in prefixes):
-                        image_dict[feature_key] = torch.zeros_like(image_dict[feature_key])
-                        image_mask[feature_key] = torch.tensor(0.0, dtype=torch.float32)
+                if feature_name != "RADIOMIC":
+                    if patient_dropout.get(feature_name, False) and feature_name in image_dict:
+                        image_dict[feature_name] = torch.zeros_like(image_dict[feature_name])
+                        image_mask[feature_name] = torch.tensor(0.0, dtype=torch.float32)
+                    continue
 
-        # return image_dict, image_mask
+                radiomic_reference = reference_value if isinstance(reference_value, dict) else {}
+                radiomic_dropout = patient_dropout.get("RADIOMIC", {})
+
+                for group_name, group_spec in radiomic_reference.items():
+                    if not radiomic_dropout.get(group_name, False):
+                        continue
+
+                    prefixes = group_spec[0] if isinstance(group_spec, list) and group_spec else []
+                    for feature_key in image_dict.keys():
+                        if any(feature_key.startswith(prefix) for prefix in prefixes):
+                            image_dict[feature_key] = torch.zeros_like(image_dict[feature_key])
+                            image_mask[feature_key] = torch.tensor(0.0, dtype=torch.float32)
+
         keys = list(image_dict.keys())
         image_tensor = torch.stack([image_dict[k] for k in keys], dim=0)
         mask_tensor  = torch.stack([image_mask[k] for k in keys], dim=0)
@@ -152,6 +155,9 @@ class UPennGBMDataset(Dataset):
 
 
     def _apply_tabular_mask(self, pid, tabular_values, tabular_mask):
+        if not self.apply_mask:
+            return tabular_values, tabular_mask
+
         patient_dropout = self.dropout_by_id.get(pid, {})
         tabular_dropout = patient_dropout.get("TABULAR", {})
         tabular_reference = self.dropout_reference.get("TABULAR", {})
