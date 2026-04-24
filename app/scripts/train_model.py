@@ -16,13 +16,13 @@ def train_3d_vit(CONFIG: Configuration):
     ssl_train_loader, survival_dm, train_loader, val_loader, test_loader = prepare_data(CONFIG)
 
     print_separator("Starting ViT Pretraining", sep_type='SUPER')
-    vit_pretraining_checkpoint = train_stage_vit_pretraining(CONFIG, ssl_train_loader)
+    # vit_pretraining_checkpoint = train_stage_vit_pretraining(CONFIG, ssl_train_loader)
 
     print_separator("Starting SSL Pretraining", sep_type='SUPER')
     ssl_checkpoint_path = train_stage_ssl(
         CONFIG,
         ssl_train_loader,
-        init_checkpoint_path=vit_pretraining_checkpoint,
+        # init_checkpoint_path=vit_pretraining_checkpoint,
     )
 
 
