@@ -10,3 +10,4 @@ from .survival_predictor import MultimodalSurvivalPredictor
 from .survival_lightning import MultimodalSurvivalLightningModule
 from .tabular_tokenizer import TabularTokenizer
 from .vit_encoder_3d import ViTEncoder3D
+from .radiomic_normalizer import RadiomicTokenizer

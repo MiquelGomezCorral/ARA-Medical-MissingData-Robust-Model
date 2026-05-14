@@ -22,12 +22,23 @@ def test_model(CONFIG: Configuration, survival_module: torch.nn.Module, test_loa
                 image = batch['image'].to(device)
                 tabular = batch['tabular'].to(device)
                 labels = batch['label'].to(device)
+                radiomic = {
+                    'ED': batch['radiomic_ED'].to(device),
+                    'ET': batch['radiomic_ET'].to(device),
+                    'NC': batch['radiomic_NC'].to(device),
+                }
+
+                radiomic_mask = {
+                    'ED': batch['radiomic_mask_ED'].to(device),
+                    'ET': batch['radiomic_mask_ET'].to(device),
+                    'NC': batch['radiomic_mask_NC'].to(device),
+                }
             except (TypeError, KeyError):
                 image, tabular, labels = batch
                 image = image.to(device)
                 tabular = tabular.to(device)
                 labels = labels.to(device)
-            preds = survival_module(image, tabular)
+            preds = survival_module(image, tabular, radiomic, radiomic_mask)
             all_preds.extend(torch.argmax(preds, dim=1).cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
 

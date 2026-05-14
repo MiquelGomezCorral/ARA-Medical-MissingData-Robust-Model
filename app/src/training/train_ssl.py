@@ -60,7 +60,6 @@ def _run_ssl_stage(
         default_root_dir=CONFIG.LOGS_PATH,
         log_every_n_steps=1,
         enable_progress_bar=True,
-        profiler="simple",
     )
 
     ssl_trainer.fit(ssl_module, train_dataloaders=ssl_train_loader)

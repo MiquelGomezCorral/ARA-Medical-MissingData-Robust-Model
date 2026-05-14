@@ -43,6 +43,7 @@ class Configuration:
 
     partition_ids_path: str = os.path.join(DATA_PATH, "partitions_ids.json")
     dropout_data_path: str = os.path.join(DATA_PATH, "dropout_data.json")
+    radiomic_data_path: str = os.path.join(DATA_PATH, "radiomic_processed.json")
 
     # ===================================================================
     #                       PARAMETER

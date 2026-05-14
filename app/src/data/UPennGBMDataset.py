@@ -23,11 +23,13 @@ class UPennGBMDataset(Dataset):
         self.tensor_dir = CONFIG.mr_nf_tensors_96
         self.mr_data = CONFIG.mr_data
         self.dropout_data_path = CONFIG.dropout_data_path
+        self.radiomic_data_path = CONFIG.radiomic_data_path
 
         self.bins = CONFIG.bins
         self.labels = CONFIG.labels
         self.dropout_reference, self.dropout_by_id = self._load_dropout_data()
         self.process_tabular()
+        self.radiomic = self._load_radiomic_data()
     
 
         self.cache = {}
@@ -63,24 +65,77 @@ class UPennGBMDataset(Dataset):
             dtype=torch.long
         )
 
+        self._n_radiomic_features = 144
+
         if self.transform:
             image = self.transform(image)
 
+        radiomic_data = self.radiomic.get(pid, {})
+        radiomic_tensors, radiomic_masks = self._build_radiomic_tensors(radiomic_data.get("data", {}))
+
+
         return {
-            'image': image,             # expect torch.Size([4, D, D, D]) con D = 96
-            'image_mask': image_mask,   # Shape: (N_channels,)
-            'tabular': tabular_values,  # Shape: (N_features,)
-            'tabular_mask': tabular_mask,
-            'label': label             # Scalar
+            'image':         image,           # (4, D, D, D)
+            'image_mask':    image_mask,      # (N_channels,)
+            'tabular':       tabular_values,  # (N_features,)
+            'tabular_mask':  tabular_mask,
+            'label':         label,
+            # Un tensor + máscara por región
+            'radiomic_ED':      radiomic_tensors['ED'],   # (4, N_feat)
+            'radiomic_ET':      radiomic_tensors['ET'],
+            'radiomic_NC':      radiomic_tensors['NC'],
+            'radiomic_mask_ED': radiomic_masks['ED'],     # (4,)  → por modalidad
+            'radiomic_mask_ET': radiomic_masks['ET'],
+            'radiomic_mask_NC': radiomic_masks['NC'],
         }
-    
-    
+
+
+    def _build_radiomic_tensors(self, data: dict = {}):
+        """
+        Para cada región devuelve:
+        - tensor (4, N_feat): modalidades apiladas; 0.0 donde haya null
+        - mask  (4,):         1.0 si la modalidad existe, 0.0 si es null
+        """
+        MODALITIES = ['FLAIR', 'T1', 'T1GD', 'T2']
+        REGIONS    = ['ED', 'ET', 'NC']
+
+        region_tensors = {}
+        region_masks   = {}
+
+        for region in REGIONS:
+            rows  = []   # una fila por modalidad
+            masks = []
+
+            for mod in MODALITIES:
+                feature_list = data.get(mod, {}).get(region, None)
+
+                if feature_list is None or any(v is None for v in feature_list):
+                    # Modalidad ausente o con nulos: rellenar con ceros
+                    n_feat = self._n_radiomic_features
+                    row    = torch.zeros(n_feat, dtype=torch.float32)
+                    masks.append(0.0)
+                else:
+                    row = torch.tensor(feature_list, dtype=torch.float32)
+                    masks.append(1.0)
+
+                rows.append(row)
+
+            region_tensors[region] = torch.stack(rows) # (4, N_feat)
+            region_masks[region]   = torch.tensor(masks, dtype=torch.float32)  # (4,)
+
+        return region_tensors, region_masks
 
     def _load_dropout_data(self):
         with open(self.dropout_data_path, "r", encoding="utf-8") as f:
             dropout_data = json.load(f)
 
         return dropout_data.get("reference", {}), dropout_data.get("ids", {})
+    
+    def _load_radiomic_data(self):
+        with open(self.radiomic_data_path, "r", encoding="utf-8") as f:
+            radiomic_data = json.load(f)
+
+        return radiomic_data
 
 
     def _sample_path(self, pid):

@@ -27,6 +27,7 @@ class MultimodalSurvivalLightningModule(L.LightningModule):
         learning_rate: float = 1e-4,
         weight_decay: float = 1e-4,
         label_smoothing: float = 0.1,
+        radiomic_n_features: int = 144,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -42,17 +43,29 @@ class MultimodalSurvivalLightningModule(L.LightningModule):
             tabular_in=tabular_in,
             tabular_tokens=tabular_tokens,
             tabular_hidden=tabular_hidden,
+            radiomic_n_features=radiomic_n_features
         )
         self.criterion = nn.CrossEntropyLoss(label_smoothing=label_smoothing)
 
-    def forward(self, image: torch.Tensor, tabular: torch.Tensor) -> torch.Tensor:
-        return self.model(image, tabular)
+    def forward(self, image: torch.Tensor, tabular: torch.Tensor, radiomic: torch.Tensor, radiomic_mask: torch.Tensor) -> torch.Tensor:
+        return self.model(image, tabular, radiomic, radiomic_mask)
 
     def _step(self, batch, stage: str):
         images = batch["image"]
         tabular = batch["tabular"]
         labels = batch["label"].long()
-        logits = self(images, tabular)
+        radiomic={
+            'ED': batch['radiomic_ED'],
+            'ET': batch['radiomic_ET'],
+            'NC': batch['radiomic_NC'],
+        }
+        radiomic_mask={
+            'ED': batch['radiomic_mask_ED'],
+            'ET': batch['radiomic_mask_ET'],
+            'NC': batch['radiomic_mask_NC'],
+        }
+
+        logits = self(images, tabular, radiomic, radiomic_mask)
         loss = self.criterion(logits, labels)
         preds = logits.argmax(dim=1)
         acc = (preds == labels).float().mean()
