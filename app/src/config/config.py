@@ -70,6 +70,7 @@ class Configuration:
     ssl_checkpoint_path: str = MODELS_PATH
     survival_checkpoint_name: str = "survival_checkpoint.pt"
     survival_checkpoint_path: str = MODELS_PATH
+    early_stopping_patience: int = 10
 
     ssl_embed_dim: int = 256
     ssl_vit_depth: int = 4

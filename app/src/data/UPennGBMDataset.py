@@ -75,11 +75,11 @@ class UPennGBMDataset(Dataset):
 
 
         return {
+            'label':         label,
             'image':         image,           # (4, D, D, D)
             'image_mask':    image_mask,      # (N_channels,)
             'tabular':       tabular_values,  # (N_features,)
             'tabular_mask':  tabular_mask,
-            'label':         label,
             # Un tensor + máscara por región
             'radiomic_ED':      radiomic_tensors['ED'],   # (4, N_feat)
             'radiomic_ET':      radiomic_tensors['ET'],

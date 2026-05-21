@@ -61,7 +61,7 @@ def train_stage_survival(
             EarlyStopping(
                 monitor="val_bacc",
                 mode="max",
-                patience=2,
+                patience=CONFIG.early_stopping_patience,
                 min_delta=1e-4,
             ),
         ],
@@ -72,10 +72,15 @@ def train_stage_survival(
 
     # ======================== TRAINING & TESTING ========================
     survival_trainer.fit(survival_module, train_dataloaders=train_loader, val_dataloaders=val_loader)
-    survival_trainer.test(survival_module, dataloaders=test_loader)
+    survival_trainer.test(
+        ckpt_path=survival_checkpoint_cb.best_model_path,
+        dataloaders=test_loader
+    )
 
     if not survival_checkpoint_cb.best_model_path:
         raise RuntimeError("No survival checkpoint was saved by ModelCheckpoint.")
 
     print(f" - Best Survival checkpoint: {survival_checkpoint_cb.best_model_path}")
-    return survival_module
+    return MultimodalSurvivalLightningModule.load_from_checkpoint(
+        survival_checkpoint_cb.best_model_path
+    )
