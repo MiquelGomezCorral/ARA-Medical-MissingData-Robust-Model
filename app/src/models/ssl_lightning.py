@@ -69,6 +69,18 @@ class SSLPretrainingLightningModule(L.LightningModule):
         self.log("train_recon", l_recon, prog_bar=False, on_step=False, on_epoch=True)
         return loss
 
+    def validation_step(self, batch, batch_idx: int):
+        if len(batch) == 3:
+            x_i, x_j, target = batch
+        else:
+            x_i, x_j = batch
+            target = None
+        loss, l_contrast, l_recon = self(x_i, x_j, target=target)
+        self.log("val_loss", loss, prog_bar=True, on_step=False, on_epoch=True)
+        self.log("val_contrast", l_contrast, prog_bar=False, on_step=False, on_epoch=True)
+        self.log("val_recon", l_recon, prog_bar=False, on_step=False, on_epoch=True)
+        return loss
+
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(
             self.parameters(),

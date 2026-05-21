@@ -13,16 +13,13 @@ from src.utils import set_all_seeds
 def train_3d_vit(CONFIG: Configuration):
     set_all_seeds(CONFIG.seed)
     print_separator("Preparing Data", sep_type='LONG')
-    ssl_train_loader, survival_dm, train_loader, val_loader, test_loader = prepare_data(CONFIG)
-
-    print_separator("Starting ViT Pretraining", sep_type='SUPER')
-    # vit_pretraining_checkpoint = train_stage_vit_pretraining(CONFIG, ssl_train_loader)
+    ssl_train_loader, ssl_val_loader, survival_dm, train_loader, val_loader, test_loader = prepare_data(CONFIG)
 
     print_separator("Starting SSL Pretraining", sep_type='SUPER')
     ssl_checkpoint_path = train_stage_ssl(
         CONFIG,
         ssl_train_loader,
-        # init_checkpoint_path=vit_pretraining_checkpoint,
+        val_loader=ssl_val_loader,
     )
 
 
@@ -40,16 +37,13 @@ def train_3d_vit(CONFIG: Configuration):
 def train_ssl_pretraining(CONFIG: Configuration):
     set_all_seeds(CONFIG.seed)
     print_separator("Preparing SSL Data", sep_type='LONG')
-    ssl_train_loader = prepare_ssl_data(CONFIG)
-
-    print_separator("Starting ViT Pretraining", sep_type='SUPER')
-    vit_pretraining_checkpoint = train_stage_vit_pretraining(CONFIG, ssl_train_loader)
+    ssl_train_loader, ssl_val_loader = prepare_ssl_data(CONFIG)
 
     print_separator("Starting SSL Pretraining", sep_type='SUPER')
     ssl_checkpoint_path = train_stage_ssl(
         CONFIG,
         ssl_train_loader,
-        init_checkpoint_path=vit_pretraining_checkpoint,
+        val_loader=ssl_val_loader,
     )
     return ssl_checkpoint_path
 
@@ -66,7 +60,10 @@ def prepare_ssl_data(CONFIG: Configuration):
     ssl_dm.setup()
 
     print(f" - SSL Train samples:      {len(ssl_dm.train_ds):>5}")
-    return ssl_dm.train_dataloader()
+    val_loader = ssl_dm.val_dataloader()
+    if val_loader is not None:
+        print(f" - SSL Val samples:        {len(ssl_dm.val_ds):>5}")
+    return ssl_dm.train_dataloader(), val_loader
 
 
 def prepare_survival_data(CONFIG: Configuration):
@@ -114,7 +111,7 @@ def prepare_survival_data(CONFIG: Configuration):
 
 
 def prepare_data(CONFIG: Configuration):
-    ssl_train_loader = prepare_ssl_data(CONFIG)
+    ssl_train_loader, ssl_val_loader = prepare_ssl_data(CONFIG)
     survival_dm, train_loader, val_loader, test_loader = prepare_survival_data(CONFIG)
 
-    return ssl_train_loader, survival_dm, train_loader, val_loader, test_loader
+    return ssl_train_loader, ssl_val_loader, survival_dm, train_loader, val_loader, test_loader

@@ -32,14 +32,17 @@ def _run_ssl_stage(
     ssl_train_loader: DataLoader,
     ssl_module: SSLPretrainingLightningModule,
     checkpoint_filename: str,
+    val_loader: DataLoader | None = None,
 ):
     ssl_accelerator, ssl_devices, ssl_device_label = resolve_lightning_accelerator(CONFIG)
     print(f" - [SSL] device: {ssl_device_label}")
 
+    monitor_metric = "val_loss" if val_loader is not None else "train_loss"
+
     ssl_checkpoint_cb = ModelCheckpoint(
         dirpath=CONFIG.MODELS_PATH,
         filename=checkpoint_filename,
-        monitor="train_loss",
+        monitor=monitor_metric,
         mode="min",
         save_top_k=1,
     )
@@ -51,7 +54,7 @@ def _run_ssl_stage(
         callbacks=[
             ssl_checkpoint_cb,
             EarlyStopping(
-                monitor="train_loss",
+                monitor=monitor_metric,
                 mode="min",
                 patience=3,
                 min_delta=1e-4,
@@ -62,7 +65,8 @@ def _run_ssl_stage(
         enable_progress_bar=True,
     )
 
-    ssl_trainer.fit(ssl_module, train_dataloaders=ssl_train_loader)
+    ssl_trainer.fit(ssl_module, train_dataloaders=ssl_train_loader,
+                    val_dataloaders=val_loader)
 
     if not ssl_checkpoint_cb.best_model_path:
         raise RuntimeError("No SSL checkpoint was saved by ModelCheckpoint.")
@@ -71,7 +75,8 @@ def _run_ssl_stage(
     return ssl_checkpoint_cb.best_model_path
 
 
-def train_stage_vit_pretraining(CONFIG: Configuration, ssl_train_loader: DataLoader):
+def train_stage_vit_pretraining(CONFIG: Configuration, ssl_train_loader: DataLoader,
+                                val_loader: DataLoader | None = None):
     """Stage 0: pretrain ViT encoder before SSL and survival stages."""
     ssl_module = _build_ssl_module(CONFIG)
     return _run_ssl_stage(
@@ -79,6 +84,7 @@ def train_stage_vit_pretraining(CONFIG: Configuration, ssl_train_loader: DataLoa
         ssl_train_loader,
         ssl_module,
         checkpoint_filename="vit_pretraining_best",
+        val_loader=val_loader,
     )
 
 
@@ -87,6 +93,7 @@ def train_stage_ssl(
     CONFIG: Configuration,
     ssl_train_loader: DataLoader,
     init_checkpoint_path: str | None = None,
+    val_loader: DataLoader | None = None,
 ):
     # ======================== SSL MODULE & CONFIG ========================
     ssl_module = _build_ssl_module(CONFIG)
@@ -102,4 +109,5 @@ def train_stage_ssl(
         ssl_train_loader,
         ssl_module,
         checkpoint_filename="ssl_pretraining_best",
+        val_loader=val_loader,
     )

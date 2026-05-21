@@ -35,6 +35,8 @@ class Configuration:
     brats_tensors: str = os.path.join(brats_path, "images_tensors")
     brats_tensors_96: str = os.path.join(brats_path, "images_tensors_96")
     brats_overlap_ids_path: str = os.path.join(brats_path, "overlap_ucsf_test_ids.json")
+    brats_ssl_train_ids_path: str = os.path.join(brats_path, "ssl_train_ids.json")
+    brats_ssl_val_ids_path: str = os.path.join(brats_path, "ssl_val_ids.json")
 
 
     tabular_ids_path: str = os.path.join(DATA_PATH, "tabular_ids.json")
@@ -96,7 +98,7 @@ class Configuration:
             self.DATA_PATH, self.MODELS_PATH, self.LOGS_PATH, self.CONFIGS_PATH,
             self.mr_path, self.mr_nf_path, self.mr_nf_structural, self.mr_nf_segm, self.mr_nf_tensors,
             self.mr_nf_tensors_96,
-            self.brats_path, self.brats_path_structural, self.brats_tensors, self.brats_tensors_96
+            self.brats_path, self.brats_path_structural, self.brats_tensors, self.brats_tensors_96,
         ])
         if self.yaml_config_name:
             self._load_yaml_configuration(self.yaml_config_name)
