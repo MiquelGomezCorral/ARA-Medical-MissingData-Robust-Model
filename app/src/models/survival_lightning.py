@@ -3,7 +3,8 @@
 import pytorch_lightning as L
 import torch
 import torch.nn as nn
-from sklearn.metrics import balanced_accuracy_score
+from torch.optim.lr_scheduler import CosineAnnealingLR
+from sklearn.metrics import balanced_accuracy_score, f1_score
 
 from src.models.survival_predictor import MultimodalSurvivalPredictor
 
@@ -47,8 +48,10 @@ class MultimodalSurvivalLightningModule(L.LightningModule):
         )
         self.criterion = nn.CrossEntropyLoss(label_smoothing=label_smoothing)
 
-    def forward(self, image: torch.Tensor, tabular: torch.Tensor, radiomic: torch.Tensor, radiomic_mask: torch.Tensor) -> torch.Tensor:
-        return self.model(image, tabular, radiomic, radiomic_mask)
+    def forward(self, image: torch.Tensor, tabular: torch.Tensor, radiomic: torch.Tensor, radiomic_mask: torch.Tensor,
+                tabular_mask: torch.Tensor | None = None, image_mask: torch.Tensor | None = None) -> torch.Tensor:
+        return self.model(image, tabular, radiomic, radiomic_mask,
+                          tabular_mask=tabular_mask, image_mask=image_mask)
 
     def _step(self, batch, stage: str):
         images = batch["image"]
@@ -65,14 +68,18 @@ class MultimodalSurvivalLightningModule(L.LightningModule):
             'NC': batch['radiomic_mask_NC'],
         }
 
-        logits = self(images, tabular, radiomic, radiomic_mask)
+        logits = self(images, tabular, radiomic, radiomic_mask,
+                      tabular_mask=batch.get("tabular_mask"),
+                      image_mask=batch.get("image_mask"))
         loss = self.criterion(logits, labels)
         preds = logits.argmax(dim=1)
         acc = (preds == labels).float().mean()
         bacc = balanced_accuracy_score(labels.detach().cpu().numpy(), preds.detach().cpu().numpy())
+        f1 = f1_score(labels.detach().cpu().numpy(), preds.detach().cpu().numpy(), average="macro")
         self.log(f"{stage}_loss", loss, prog_bar=(stage != "train"), on_step=False, on_epoch=True)
         self.log(f"{stage}_acc", acc, prog_bar=True, on_step=False, on_epoch=True)
         self.log(f"{stage}_bacc", bacc, prog_bar=(stage != "train"), on_step=False, on_epoch=True)
+        self.log(f"{stage}_f1", f1, prog_bar=(stage != "train"), on_step=False, on_epoch=True)
         return loss
 
     def training_step(self, batch, batch_idx: int):
@@ -90,10 +97,8 @@ class MultimodalSurvivalLightningModule(L.LightningModule):
             lr=self.hparams.learning_rate,
             weight_decay=self.hparams.weight_decay,
         )
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer,
-            T_max=max(int(self.trainer.max_epochs), 1),
-        )
+        total = max(int(self.trainer.max_epochs), 1)
+        scheduler = CosineAnnealingLR(optimizer, T_max=total)
         return {
             "optimizer": optimizer,
             "lr_scheduler": {

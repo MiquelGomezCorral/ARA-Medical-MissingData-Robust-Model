@@ -251,7 +251,8 @@ class MultimodalSurvivalPredictor(nn.Module):
         tabular: torch.Tensor,                        # (B, N_tab)
         radiomic: dict[str, torch.Tensor],            # {'ED': (B,4,F), 'ET':…, 'NC':…}
         radiomic_mask: dict[str, torch.Tensor],       # {'ED': (B,4), …}  True=valid
-        tab_pad_mask: torch.Tensor | None = None,     # (B, T)  True=PAD  (PyTorch convention)
+        tabular_mask: torch.Tensor | None = None,     # (B, N_tab)  True=present
+        image_mask: torch.Tensor | None = None,       # (B, C)      True=present
     ) -> torch.Tensor:                                # (B, num_classes)
 
         # ── 1. Image encoding ──────────────────────────────────────────

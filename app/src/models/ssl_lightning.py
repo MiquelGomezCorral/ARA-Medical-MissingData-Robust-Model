@@ -3,6 +3,7 @@
 import pytorch_lightning as L
 import torch
 import torch.nn as nn
+from torch.optim.lr_scheduler import CosineAnnealingLR
 
 from src.models.ssl_module import SSLPretraining
 from src.models.vit_encoder_3d import ViTEncoder3D
@@ -74,10 +75,8 @@ class SSLPretrainingLightningModule(L.LightningModule):
             lr=self.learning_rate,
             weight_decay=self.weight_decay,
         )
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer,
-            T_max=max(int(self.trainer.max_epochs), 1),
-        )
+        total = max(int(self.trainer.max_epochs), 1)
+        scheduler = CosineAnnealingLR(optimizer, T_max=total)
         return {
             "optimizer": optimizer,
             "lr_scheduler": {
