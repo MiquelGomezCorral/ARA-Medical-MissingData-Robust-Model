@@ -227,6 +227,15 @@ class MultimodalSurvivalPredictor(nn.Module):
             dropout=dropout,
         )
 
+        # ── Image mask projection for gating ──────────────────────
+        self.image_mask_proj = nn.Sequential(
+            nn.Linear(in_channels, embed_dim),
+            nn.GELU(),
+            nn.Linear(embed_dim, embed_dim),
+        )
+        nn.init.zeros_(self.image_mask_proj[-1].weight)
+        nn.init.zeros_(self.image_mask_proj[-1].bias)
+
         # ── Token-wise sigmoid gate ───────────────────────────────
         self.sigmoid_gate = TokenWiseSigmoidGate(embed_dim)
 
@@ -274,11 +283,16 @@ class MultimodalSurvivalPredictor(nn.Module):
         # Masked mean pool preserves structure; fully-absent → zero vector.
         rad_summary = masked_mean_pool(rad_tokens, rad_mask)   # (B, D)
 
+        # ── 3b. Inject image mask into radiomic summary ────────────────
+        if image_mask is not None:
+            img_mask_feat = self.image_mask_proj(image_mask)           # (B, D)
+            rad_summary = rad_summary + img_mask_feat                 # (B, D)
+
         # ── 4. Token-wise sigmoid gate ────────────────────────────────
         fused_tokens = self.sigmoid_gate(img_tokens, rad_summary)  # (B, S, D)
 
         # ── 5. Tabular tokenisation ───────────────────────────────────
-        tab_tokens = self.tabular_tokenizer(tabular)   # (B, T, D)
+        tab_tokens = self.tabular_tokenizer(tabular, mask=tabular_mask)   # (B, T, D)
 
         # ── 6. Two-way cross-attention ────────────────────────────────
         # A: fused image tokens attend to tabular tokens

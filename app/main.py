@@ -41,8 +41,8 @@ if __name__ == "__main__":
     # ======================================================================================
     p_train_model = subparsers.add_parser("train", help="Train SSL, survival, or both")
     # p_train_model.add_argument("--stage", type=str, choices=("ssl", "survival", "both"), default="survival", help="Which training stage to run")
-    p_train_model.add_argument("-mtr", '--masked_train', default=False, action="store_true", help="Disable early stopping")
-    p_train_model.add_argument("-mts", '--masked_test', default=False, action="store_true", help="Disable early stopping")
+    p_train_model.add_argument("-mtr", '--masked_train', default=False, action="store_true", help="Enable missing data masking during training")
+    p_train_model.add_argument("-mts", '--masked_test', default=False, action="store_true", help="Enable missing data masking during test")
 
 
     p_train_model.add_argument("--ssl_checkpoint_name", type=str, default="ssl_checkpoint.pt", help="Filename used when saving the SSL checkpoint")
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     p_train_model.add_argument("--ssl_crop_scale", type=float, default=0.85, help="SSL random crop scale")
     p_train_model.add_argument("--checkpoint_name", type=str, default="survival_checkpoint.pt", help="Filename used when saving the survival checkpoint")
     p_train_model.add_argument("--survival_epochs", type=int, default=20, help="Number of survival training epochs")
-    p_train_model.add_argument("--_atch-size", type=int, default=4, help="Survival batch size")
+    p_train_model.add_argument("--survival-batch-size", type=int, default=16, help="Survival batch size")
     p_train_model.add_argument("--learning_rate", type=float, default=1e-4, help="Survival learning rate")
     p_train_model.add_argument("--weight_decay", type=float, default=1e-4, help="Survival weight decay")
     p_train_model.add_argument("--label_smoothing", type=float, default=0.1, help="Label smoothing for the survival loss")

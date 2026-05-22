@@ -261,6 +261,8 @@ class BraTSSSLAugmentPipeline:
 
     def __init__(self, patch_size: int = 12, cutout_min_ratio: float = 0.1, cutout_max_ratio: float = 0.25):
         self.transforms = [
+            RobustIntensityStandardization3D(nonzero=True),
+            ZNormalization3D(nonzero=True),
             RandomPatchSwap3D(patch_size=patch_size, p=0.8, swaps=1),
             RandomCutout3D(min_ratio=cutout_min_ratio, max_ratio=cutout_max_ratio, p=0.8),
         ]

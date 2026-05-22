@@ -5,6 +5,7 @@ everywhere and considered configuration.
 """
 import os
 from dataclasses import dataclass
+from datetime import datetime
 
 from maikol_utils.file_utils import make_dirs
 import yaml
@@ -89,6 +90,9 @@ class Configuration:
     ssl_cutout_min_ratio: float = 0.10
     ssl_cutout_max_ratio: float = 0.25
 
+    survival_batch_size: int = 16
+    survival_num_workers: int = 4
+
 
     def __post_init__(self):
         # Basic setup: create folders and load yaml config if provided
@@ -98,6 +102,14 @@ class Configuration:
             self.mr_nf_tensors_96,
             self.brats_path, self.brats_path_structural, self.brats_tensors, self.brats_tensors_96
         ])
+
+        # Session subdirectory — one per run
+        timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        session_id = f"{self.exp_name}_{timestamp}"
+        self.MODELS_PATH = os.path.join(self.MODELS_PATH, session_id)
+        self.LOGS_PATH = os.path.join(self.LOGS_PATH, session_id)
+        make_dirs([self.MODELS_PATH, self.LOGS_PATH])
+
         if self.yaml_config_name:
             self._load_yaml_configuration(self.yaml_config_name)
 

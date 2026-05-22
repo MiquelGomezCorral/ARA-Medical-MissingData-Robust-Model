@@ -31,7 +31,12 @@ class TabularTokenizer(nn.Module):
         )
         self.norm = nn.LayerNorm(embed_dim)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        self.missing_emb = nn.Parameter(torch.zeros(in_features))
+        nn.init.trunc_normal_(self.missing_emb, std=0.02)
+
+    def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
+        if mask is not None:
+            x = x + (1.0 - mask) * self.missing_emb.unsqueeze(0)
         B = x.shape[0]
         tokens = self.net(x)
         tokens = tokens.view(B, self.num_tokens, self.embed_dim)

@@ -217,3 +217,5 @@ models/*
 .codegraph
 package-lock.json
 package.json
+.agents/*
+skills-lock.json

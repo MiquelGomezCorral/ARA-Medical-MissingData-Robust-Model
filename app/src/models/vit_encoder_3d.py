@@ -87,12 +87,16 @@ class ViTEncoder3D(nn.Module):
         self.vol_size = vol_size
 
         self.patch_embed = PatchEmbed3D(in_channels, patch_size, embed_dim, vol_size)
-        L = self.patch_embed.num_patches
+        self.grid_size = vol_size // patch_size
 
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
-        self.pos_embed = nn.Parameter(torch.zeros(1, L + 1, embed_dim))
+        self.pos_embed = nn.Parameter(
+            torch.zeros(1, self.grid_size, self.grid_size, self.grid_size, embed_dim)
+        )
+        self.cls_pos = nn.Parameter(torch.zeros(1, 1, embed_dim))
         nn.init.trunc_normal_(self.cls_token, std=0.02)
         nn.init.trunc_normal_(self.pos_embed, std=0.02)
+        nn.init.trunc_normal_(self.cls_pos, std=0.02)
 
         self.blocks = nn.ModuleList([
             TransformerBlock(embed_dim, num_heads, mlp_ratio, dropout)
@@ -116,7 +120,9 @@ class ViTEncoder3D(nn.Module):
         tokens = self.patch_embed(x)
         cls = self.cls_token.expand(B, -1, -1)
         tokens = torch.cat([cls, tokens], dim=1)
-        tokens = tokens + self.pos_embed
+        pos = self.pos_embed.flatten(1, 3)
+        pos = torch.cat([self.cls_pos, pos], dim=1)
+        tokens = tokens + pos
         for block in self.blocks:
             tokens = block(tokens)
         return self.norm(tokens)
