@@ -6,7 +6,7 @@ from maikol_utils.print_utils import print_separator
 from src.data import BraTSSSLDataModule
 from src.data import UPennGBMDataModule
 from src.config import Configuration
-from src.training import train_stage_vit_pretraining, train_stage_ssl, train_stage_survival, test_model
+from src.training import train_stage_ssl, train_stage_survival, test_model
 from src.utils import set_all_seeds
 
 
@@ -43,13 +43,13 @@ def train_ssl_pretraining(CONFIG: Configuration):
     ssl_train_loader = prepare_ssl_data(CONFIG)
 
     print_separator("Starting ViT Pretraining", sep_type='SUPER')
-    vit_pretraining_checkpoint = train_stage_vit_pretraining(CONFIG, ssl_train_loader)
+    # vit_pretraining_checkpoint = train_stage_vit_pretraining(CONFIG, ssl_train_loader)
 
     print_separator("Starting SSL Pretraining", sep_type='SUPER')
     ssl_checkpoint_path = train_stage_ssl(
         CONFIG,
         ssl_train_loader,
-        init_checkpoint_path=vit_pretraining_checkpoint,
+        # init_checkpoint_path=vit_pretraining_checkpoint,
     )
     return ssl_checkpoint_path
 

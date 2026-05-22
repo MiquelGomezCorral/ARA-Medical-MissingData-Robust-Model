@@ -42,10 +42,7 @@ class BraTSTensorDataset(Dataset):
             std = channel.std().clamp(min=1e-5)
             image[channel_idx] = (channel - mean) / std
 
-        return {
-            "image": image,
-            "patient_id": pid,
-        }
+        return {"image": image, "patient_id": pid}
 
 
 class BraTSSSLDataset(Dataset):
