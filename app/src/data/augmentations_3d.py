@@ -18,7 +18,8 @@ import math
 #                   SSL Augmentations
 # ====================================================================
 class MRIAugmentPipeline:
-    """Applies a sequence of augmentations to a 3-D MRI tensor."""
+    """Applies a sequence of augmentations to a 3-D MRI tensor.
+    Phase 3c: added BraTS-style patch swap and cutout to UPenn pipeline."""
 
     def __init__(
         self,
@@ -29,18 +30,21 @@ class MRIAugmentPipeline:
         intensity_lo:  float = 0.9,
         intensity_hi:  float = 1.1,
         crop_scale:    float = 0.85,
+        patch_size:    int   = 12,
+        cutout_min:    float = 0.1,
+        cutout_max:    float = 0.25,
     ):
         self.transforms = [
-            # --- NORMALIZE ---
             RobustIntensityStandardization3D(nonzero=True),
             ZNormalization3D(nonzero=True),
-            
-            # --- AUGMENT ---
             RandomFlip3D(p=flip_p),
             RandomRotate90_3D(p=rotate_p),
             RandomIntensityScaling(lo=intensity_lo, hi=intensity_hi),
             RandomGaussianNoise(max_std=noise_std),
             RandomCrop3D(target_size=vol_size, min_scale=crop_scale),
+            # Phase 3c: BraTS-style patch swap and cutout added
+            RandomPatchSwap3D(patch_size=patch_size, p=0.8, swaps=1),
+            RandomCutout3D(min_ratio=cutout_min, max_ratio=cutout_max, p=0.8),
         ]
 
     def __call__(self, x: torch.Tensor) -> torch.Tensor:
@@ -257,12 +261,20 @@ class ZNormalization3D:
 # ====================================================================
 
 class BraTSSSLAugmentPipeline:
-    """Apply the BraTS-specific SSL corruptions used for pretraining views."""
+    """Apply the BraTS-specific SSL corruptions used for pretraining views.
+    Phase 3c: added UPenn-safe augs (flip, rotate, noise, crop) to BraTS pipeline."""
 
     def __init__(self, patch_size: int = 12, cutout_min_ratio: float = 0.1, cutout_max_ratio: float = 0.25):
         self.transforms = [
             RobustIntensityStandardization3D(nonzero=True),
             ZNormalization3D(nonzero=True),
+            # Phase 3c: UPenn-style augs added to BraTS
+            RandomFlip3D(p=0.5),
+            RandomRotate90_3D(p=0.5),
+            RandomIntensityScaling(lo=0.9, hi=1.1),
+            RandomGaussianNoise(max_std=0.05),
+            RandomCrop3D(target_size=96, min_scale=0.85),
+            # Original BraTS augs
             RandomPatchSwap3D(patch_size=patch_size, p=0.8, swaps=1),
             RandomCutout3D(min_ratio=cutout_min_ratio, max_ratio=cutout_max_ratio, p=0.8),
         ]

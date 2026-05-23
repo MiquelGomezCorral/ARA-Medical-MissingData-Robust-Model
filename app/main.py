@@ -30,7 +30,7 @@ def cmd_train(args: argparse.Namespace):
 if __name__ == "__main__":
     dotenv.load_dotenv()
 
-    parser = argparse.ArgumentParser(prog="app", description="Main Application CLI")
+    parser = argparse.ArgumentParser(prog="ara", description="Main Application CLI")
     parser.add_argument("--seed", type=int, default=42, help="Random seed (default: 42)")
     parser.add_argument("--config", type=str, default=None, help="Name of the config file at configs/ (default: None, but config.yaml exists)")
     subparsers = parser.add_subparsers(dest="function", required=True)
@@ -41,13 +41,19 @@ if __name__ == "__main__":
     # ======================================================================================
     p_train_model = subparsers.add_parser("train", help="Train SSL, survival, or both")
     # p_train_model.add_argument("--stage", type=str, choices=("ssl", "survival", "both"), default="survival", help="Which training stage to run")
+    p_train_model.add_argument("--base_name", type=str, default="default", help="Base name for the experiment")
+
     p_train_model.add_argument("-mtr", '--masked_train', default=False, action="store_true", help="Enable missing data masking during training")
     p_train_model.add_argument("-mts", '--masked_test', default=False, action="store_true", help="Enable missing data masking during test")
 
 
+    p_train_model.add_argument("--ssl_dataset", type=str, choices=("brats", "upenn"), default="brats", help="Dataset for SSL pretraining: brats or upenn")
+    p_train_model.add_argument("--pos_embed", type=str, choices=("1d", "3d"), default="1d", help="Positional embedding: 1d or 3d")
+    p_train_model.add_argument("--use_radiomics", action="store_true", help="Enable radiomic features + sigmoid gate (default: False)")
+    p_train_model.add_argument("--dynamic_dropout", action="store_true", help="Enable dynamic train-time dropout (default: False = static JSON)")
     p_train_model.add_argument("--ssl_checkpoint_name", type=str, default="ssl_checkpoint.pt", help="Filename used when saving the SSL checkpoint")
     p_train_model.add_argument("--ssl_checkpoint", type=str, default=None, help="Optional SSL checkpoint filename to load into the survival model")
-    p_train_model.add_argument("--ssl_epochs", type=int, default=20, help="Number of SSL epochs")
+    p_train_model.add_argument("--ssl_epochs", type=int, default=30, help="Number of SSL epochs")
     p_train_model.add_argument("--ssl_batch_size", type=int, default=32, help="SSL batch size")
     p_train_model.add_argument("--ssl_learning_rate", type=float, default=1e-4, help="SSL learning rate")
     p_train_model.add_argument("--ssl_weight_decay", type=float, default=1e-4, help="SSL weight decay")

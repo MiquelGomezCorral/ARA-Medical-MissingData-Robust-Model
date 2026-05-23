@@ -197,6 +197,8 @@ class MultimodalSurvivalPredictor(nn.Module):
         radiomic_n_features: int = 144,
         radiomic_mlp_hidden: int | None = None,
         radiomic_mlp_layers: int = 3,
+        pos_embed: str = "1d",
+        use_radiomics: bool = False,
     ):
         super().__init__()
 
@@ -209,6 +211,7 @@ class MultimodalSurvivalPredictor(nn.Module):
             num_heads=num_heads,
             dropout=dropout,
             vol_size=vol_size,
+            pos_embed=pos_embed,
         )
         self.tabular_tokenizer = TabularTokenizer(
             in_features=tabular_in,
@@ -218,26 +221,26 @@ class MultimodalSurvivalPredictor(nn.Module):
             dropout=dropout,
         )
 
-        # ── Radiomic token MLP (shared across all regions & channels) ──
-        self.radiomic_mlp = RadiomicTokenMLP(
-            n_features=radiomic_n_features,
-            embed_dim=embed_dim,
-            hidden_dim=radiomic_mlp_hidden,
-            n_layers=radiomic_mlp_layers,
-            dropout=dropout,
-        )
+        self.use_radiomics = use_radiomics
 
-        # ── Image mask projection for gating ──────────────────────
-        self.image_mask_proj = nn.Sequential(
-            nn.Linear(in_channels, embed_dim),
-            nn.GELU(),
-            nn.Linear(embed_dim, embed_dim),
-        )
-        nn.init.zeros_(self.image_mask_proj[-1].weight)
-        nn.init.zeros_(self.image_mask_proj[-1].bias)
+        if self.use_radiomics:
+            self.radiomic_mlp = RadiomicTokenMLP(
+                n_features=radiomic_n_features,
+                embed_dim=embed_dim,
+                hidden_dim=radiomic_mlp_hidden,
+                n_layers=radiomic_mlp_layers,
+                dropout=dropout,
+            )
 
-        # ── Token-wise sigmoid gate ───────────────────────────────
-        self.sigmoid_gate = TokenWiseSigmoidGate(embed_dim)
+            self.image_mask_proj = nn.Sequential(
+                nn.Linear(in_channels, embed_dim),
+                nn.GELU(),
+                nn.Linear(embed_dim, embed_dim),
+            )
+            nn.init.zeros_(self.image_mask_proj[-1].weight)
+            nn.init.zeros_(self.image_mask_proj[-1].bias)
+
+            self.sigmoid_gate = TokenWiseSigmoidGate(embed_dim)
 
         # ── Two-way cross-attention: fused ↔ tabular ─────────────
         self.ca_fused_on_tab = CrossAttentionBlock(embed_dim, num_heads, dropout=dropout)
@@ -267,29 +270,26 @@ class MultimodalSurvivalPredictor(nn.Module):
         # ── 1. Image encoding ──────────────────────────────────────────
         img_tokens = self.image_encoder(image)        # (B, S, D)
 
-        # ── 2. Radiomic tokenisation ───────────────────────────────────
-        # Stack regions → (B, R*4, F) and masks → (B, R*4)
-        # Order is deterministic (REGIONS list); same order at train & infer.
-        rad_x = torch.cat(
-            [radiomic[r] for r in REGIONS], dim=1
-        )                                             # (B, R*4, F)
-        rad_mask = torch.cat(
-            [radiomic_mask[r] for r in REGIONS], dim=1
-        )                                             # (B, R*4)  bool
+        # ── 2-4. Radiomic pipeline (optional) ───────────────────────────
+        if self.use_radiomics:
+            rad_x = torch.cat(
+                [radiomic[r] for r in REGIONS], dim=1
+            )                                             # (B, R*4, F)
+            rad_mask = torch.cat(
+                [radiomic_mask[r] for r in REGIONS], dim=1
+            )                                             # (B, R*4)  bool
 
-        rad_tokens = self.radiomic_mlp(rad_x, rad_mask)   # (B, R*4, D)
+            rad_tokens = self.radiomic_mlp(rad_x, rad_mask)   # (B, R*4, D)
 
-        # ── 3. Radiomic summary for gating ────────────────────────────
-        # Masked mean pool preserves structure; fully-absent → zero vector.
-        rad_summary = masked_mean_pool(rad_tokens, rad_mask)   # (B, D)
+            rad_summary = masked_mean_pool(rad_tokens, rad_mask)   # (B, D)
 
-        # ── 3b. Inject image mask into radiomic summary ────────────────
-        if image_mask is not None:
-            img_mask_feat = self.image_mask_proj(image_mask)           # (B, D)
-            rad_summary = rad_summary + img_mask_feat                 # (B, D)
+            if image_mask is not None:
+                img_mask_feat = self.image_mask_proj(image_mask)
+                rad_summary = rad_summary + img_mask_feat
 
-        # ── 4. Token-wise sigmoid gate ────────────────────────────────
-        fused_tokens = self.sigmoid_gate(img_tokens, rad_summary)  # (B, S, D)
+            fused_tokens = self.sigmoid_gate(img_tokens, rad_summary)  # (B, S, D)
+        else:
+            fused_tokens = img_tokens  # (B, S, D)
 
         # ── 5. Tabular tokenisation ───────────────────────────────────
         tab_tokens = self.tabular_tokenizer(tabular, mask=tabular_mask)   # (B, T, D)

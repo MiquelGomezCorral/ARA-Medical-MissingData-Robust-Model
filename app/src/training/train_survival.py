@@ -32,9 +32,11 @@ def train_stage_survival(
         tabular_hidden=128,
         learning_rate=1e-4,
         weight_decay=1e-4,
-        label_smoothing=0.1,
-        radiomic_n_features=144
-    )
+            label_smoothing=0.1,
+            radiomic_n_features=144,
+            pos_embed=CONFIG.pos_embed,
+            use_radiomics=CONFIG.use_radiomics,
+        )
 
     survival_module.model.load_pretrained_encoder(
         ssl_checkpoint_path,

@@ -24,21 +24,21 @@ run_exp() {
     $2
 }
 
-# 1. Baseline
-run_exp "Standard Training (No Masks)" \
-"python main.py train --ssl_epochs 20 --survival_epochs 20"
+run_exp "No Masks - Emb D1 - No Radiomics - No D Dropout" \
+"python main.py train --base_name 'No_Masks'"
 
-# 2. Masked Train Only
-run_exp "Masked Training Partition (-mtr)" \
-"python main.py train -mtr --ssl_epochs 20 --survival_epochs 20"
+run_exp "All masks - Emb D1 - No Radiomics - No D Dropout" \
+"python main.py train -mts -mtr --base_name 'All_masks'"
 
-# 3. Masked Test Only
-run_exp "Masked Testing Partition (-mts)" \
-"python main.py train -mts --ssl_epochs 20 --survival_epochs 20"
+run_exp "All masks - Emb D3 - No Radiomics - No D Dropout" \
+"python main.py train -mts -mtr --pos_embed 3d --base_name 'All_masks-Emb_D3'"
 
-# 4. Full Masking
-run_exp "Full Masking (Train + Test)" \
-"python main.py train -mtr -mts --ssl_epochs 20 --survival_epochs 20"
+run_exp "All masks - Emb D1 - Radiomics - No D Dropout" \
+"python main.py train -mts -mtr --use_radiomics --base_name 'All_masks-Radiomics'"
+
+run_exp "All masks - Emb D1 - No Radiomics - D Dropout" \
+"python main.py train -mts -mtr --dynamic_dropout --base_name 'All_masks-D_Dropout'"
+
 
 echo -e "\n${BLUE}========================================================${NC}"
 echo -e "${GREEN}             ALL EXPERIMENTS COMPLETED                 ${NC}"

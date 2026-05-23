@@ -25,6 +25,7 @@ class SSLPretrainingLightningModule(L.LightningModule):
         num_heads: int = 8,
         dropout: float = 0.1,
         vol_size: int = 96,
+        pos_embed: str = "1d",
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -36,6 +37,7 @@ class SSLPretrainingLightningModule(L.LightningModule):
             num_heads=num_heads,
             dropout=dropout,
             vol_size=vol_size,
+            pos_embed=pos_embed,
         )
         self.model = SSLPretraining(
             encoder=self.encoder,

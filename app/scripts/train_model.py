@@ -1,9 +1,12 @@
+import os
+
 import torch
 from torch.utils.data import DataLoader
 
 from maikol_utils.print_utils import print_separator
+from maikol_utils.file_utils import save_json
 
-from src.data import BraTSSSLDataModule
+from src.data import BraTSSSLDataModule, SSLDataModule
 from src.data import UPennGBMDataModule
 from src.config import Configuration
 from src.training import train_stage_vit_pretraining, train_stage_ssl, train_stage_survival, test_model
@@ -32,6 +35,9 @@ def train_3d_vit(CONFIG: Configuration):
     print_separator("Starting Testing", sep_type='SUPER')
     results = test_model(CONFIG, survival_module, test_loader)
 
+    # Persist results so experiment runners can read them
+    save_json(os.path.join(CONFIG.MODELS_PATH, "results.json"), results)
+
 
 def train_ssl_pretraining(CONFIG: Configuration):
     set_all_seeds(CONFIG.seed)
@@ -51,16 +57,26 @@ def train_ssl_pretraining(CONFIG: Configuration):
 
 
 def prepare_ssl_data(CONFIG: Configuration):
-    ssl_dm = BraTSSSLDataModule(
-        config=CONFIG,
-        batch_size=CONFIG.ssl_batch_size,
-        num_workers=CONFIG.ssl_num_workers,
-        patch_size=CONFIG.ssl_aug_patch_size,
-        cutout_min_ratio=CONFIG.ssl_cutout_min_ratio,
-        cutout_max_ratio=CONFIG.ssl_cutout_max_ratio,
-    )
-    ssl_dm.setup()
+    if CONFIG.ssl_dataset == "upenn":
+        ssl_dm = SSLDataModule(
+            config=CONFIG,
+            batch_size=CONFIG.ssl_batch_size,
+            num_workers=CONFIG.ssl_num_workers,
+            vol_size=CONFIG.ssl_vol_size,
+        )
+        print(f" - SSL dataset:           UPenn (NIfTI)")
+    else:
+        ssl_dm = BraTSSSLDataModule(
+            config=CONFIG,
+            batch_size=CONFIG.ssl_batch_size,
+            num_workers=CONFIG.ssl_num_workers,
+            patch_size=CONFIG.ssl_aug_patch_size,
+            cutout_min_ratio=CONFIG.ssl_cutout_min_ratio,
+            cutout_max_ratio=CONFIG.ssl_cutout_max_ratio,
+        )
+        print(f" - SSL dataset:           BraTS")
 
+    ssl_dm.setup()
     print(f" - SSL Train samples:      {len(ssl_dm.train_ds):>5}")
     return ssl_dm.train_dataloader()
 

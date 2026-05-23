@@ -64,8 +64,12 @@ class Configuration:
     masked_train: bool = False
     masked_test: bool = False
 
-    ssl_epochs: int = 20
+    ssl_dataset: str = "brats"  # "brats" or "upenn" — which dataset to use for SSL pretraining
+    ssl_epochs: int = 30
     survival_epochs: int = 20
+    pos_embed: str = "1d"  # "1d" or "3d" — positional embedding type
+    use_radiomics: bool = False  # radiomic features + sigmoid gate
+    dynamic_dropout: bool = False  # train-time random dropout vs static JSON masking
     freeze_encoder: bool = False
     ssl_checkpoint_name: str = "ssl_checkpoint.pt"
     ssl_checkpoint_path: str = MODELS_PATH
@@ -85,13 +89,13 @@ class Configuration:
     ssl_vol_size: int = 96
 
     ssl_batch_size: int = 32
-    ssl_num_workers: int = 4
+    ssl_num_workers: int = 12
     ssl_aug_patch_size: int = 12
     ssl_cutout_min_ratio: float = 0.10
     ssl_cutout_max_ratio: float = 0.25
 
     survival_batch_size: int = 16
-    survival_num_workers: int = 4
+    survival_num_workers: int = 12
 
 
     def __post_init__(self):
@@ -116,6 +120,18 @@ class Configuration:
         # Names
         self.ssl_checkpoint_path = os.path.join(self.MODELS_PATH, self.ssl_checkpoint_name)
         self.survival_checkpoint_path = os.path.join(self.MODELS_PATH, self.survival_checkpoint_name)
+
+
+        print(f"Configuration initialized")
+        print(f" - seed: {self.seed}")
+        print(f" - masked_train: {self.masked_train}")
+        print(f" - masked_test: {self.masked_test}")
+        print(f" - dataset: {self.ssl_dataset}")
+        print(f" - epochs: {self.ssl_epochs} (SSL), {self.survival_epochs} (Survival)")
+        print(f" - use_radiomics: {self.use_radiomics}")
+        print(f" - dynamic_dropout: {self.dynamic_dropout}")
+        print(f" - batch_size: {self.ssl_batch_size} (SSL), {self.survival_batch_size} (Survival)")
+
 
     def _load_yaml_configuration(self, yaml_file: str) -> None:
         """Load config values from a YAML file under CONFIGS_PATH."""

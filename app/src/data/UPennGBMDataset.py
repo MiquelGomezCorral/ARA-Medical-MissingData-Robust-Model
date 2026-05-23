@@ -174,10 +174,9 @@ class UPennGBMDataset(Dataset):
     def _generate_dynamic_dropout(self, pid):
         """
         Generate dropout decisions dynamically based on reference probabilities.
-        Only called during training (self.apply_mask + training mode).
+        Only called during training when CONFIG.dynamic_dropout is True.
         """
         dropout = {}
-
         for feature_name, reference_value in self.dropout_reference.items():
             if feature_name == "TABULAR":
                 group_decisions = {}
@@ -185,19 +184,15 @@ class UPennGBMDataset(Dataset):
                     prob = group_spec[1] if isinstance(group_spec, list) and len(group_spec) > 1 else 0.0
                     group_decisions[group_name] = random.random() < prob
                 dropout["TABULAR"] = group_decisions
-
             elif feature_name == "RADIOMIC":
                 group_decisions = {}
                 for group_name, group_spec in reference_value.items():
                     prob = group_spec[1] if isinstance(group_spec, list) and len(group_spec) > 1 else 0.0
                     group_decisions[group_name] = random.random() < prob
                 dropout["RADIOMIC"] = group_decisions
-
             else:
-                # Simple image modalities: T1, T1GD, T2, FLAIR
                 prob = reference_value if isinstance(reference_value, (int, float)) else 0.0
                 dropout[feature_name] = random.random() < prob
-
         return dropout
 
     def _apply_image_mask(self, pid, image_dict):
@@ -207,8 +202,7 @@ class UPennGBMDataset(Dataset):
         }
 
         if self.apply_mask:
-            # Dynamic during train, static from JSON during test
-            if self.partition == 'train':
+            if self.CONFIG.dynamic_dropout and self.partition == 'train':
                 patient_dropout = self._generate_dynamic_dropout(pid)
             else:
                 patient_dropout = self.dropout_by_id.get(pid, {})
@@ -246,7 +240,7 @@ class UPennGBMDataset(Dataset):
         if not self.apply_mask:
             return tabular_values, tabular_mask
 
-        if self.partition == 'train':
+        if self.CONFIG.dynamic_dropout and self.partition == 'train':
             patient_dropout = self._generate_dynamic_dropout(pid)
         else:
             patient_dropout = self.dropout_by_id.get(pid, {})

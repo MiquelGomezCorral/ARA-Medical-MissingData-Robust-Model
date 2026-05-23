@@ -80,6 +80,7 @@ class ViTEncoder3D(nn.Module):
         mlp_ratio: float = 4.0,
         dropout: float = 0.1,
         vol_size: int = 96,
+        pos_embed: str = "1d",
     ):
         super().__init__()
         self.embed_dim = embed_dim
@@ -88,15 +89,20 @@ class ViTEncoder3D(nn.Module):
 
         self.patch_embed = PatchEmbed3D(in_channels, patch_size, embed_dim, vol_size)
         self.grid_size = vol_size // patch_size
+        L = self.patch_embed.num_patches
 
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
-        self.pos_embed = nn.Parameter(
-            torch.zeros(1, self.grid_size, self.grid_size, self.grid_size, embed_dim)
-        )
-        self.cls_pos = nn.Parameter(torch.zeros(1, 1, embed_dim))
+        if pos_embed == "3d":
+            self.pos_embed = nn.Parameter(
+                torch.zeros(1, self.grid_size, self.grid_size, self.grid_size, embed_dim)
+            )
+            self.cls_pos = nn.Parameter(torch.zeros(1, 1, embed_dim))
+            nn.init.trunc_normal_(self.cls_pos, std=0.02)
+        else:
+            self.pos_embed = nn.Parameter(torch.zeros(1, L + 1, embed_dim))
         nn.init.trunc_normal_(self.cls_token, std=0.02)
         nn.init.trunc_normal_(self.pos_embed, std=0.02)
-        nn.init.trunc_normal_(self.cls_pos, std=0.02)
+        self._pos_embed_type = pos_embed
 
         self.blocks = nn.ModuleList([
             TransformerBlock(embed_dim, num_heads, mlp_ratio, dropout)
@@ -120,8 +126,11 @@ class ViTEncoder3D(nn.Module):
         tokens = self.patch_embed(x)
         cls = self.cls_token.expand(B, -1, -1)
         tokens = torch.cat([cls, tokens], dim=1)
-        pos = self.pos_embed.flatten(1, 3)
-        pos = torch.cat([self.cls_pos, pos], dim=1)
+        if self._pos_embed_type == "3d":
+            pos = self.pos_embed.flatten(1, 3)
+            pos = torch.cat([self.cls_pos, pos], dim=1)
+        else:
+            pos = self.pos_embed
         tokens = tokens + pos
         for block in self.blocks:
             tokens = block(tokens)

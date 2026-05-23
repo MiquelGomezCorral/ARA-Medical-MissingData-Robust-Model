@@ -28,7 +28,9 @@ class MultimodalSurvivalLightningModule(L.LightningModule):
         learning_rate: float = 1e-4,
         weight_decay: float = 1e-4,
         label_smoothing: float = 0.1,
+        pos_embed: str = "1d",
         radiomic_n_features: int = 144,
+        use_radiomics: bool = False,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -44,7 +46,9 @@ class MultimodalSurvivalLightningModule(L.LightningModule):
             tabular_in=tabular_in,
             tabular_tokens=tabular_tokens,
             tabular_hidden=tabular_hidden,
-            radiomic_n_features=radiomic_n_features
+            radiomic_n_features=radiomic_n_features,
+            pos_embed=pos_embed,
+            use_radiomics=use_radiomics,
         )
         self.criterion = nn.CrossEntropyLoss(label_smoothing=label_smoothing)
 

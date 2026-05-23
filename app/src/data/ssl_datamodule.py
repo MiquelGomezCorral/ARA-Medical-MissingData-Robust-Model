@@ -1,5 +1,7 @@
 """Lightning DataModule for SSL pretraining."""
 
+from copy import copy
+
 import pytorch_lightning as L
 import torch
 from torch.utils.data import DataLoader, Dataset
@@ -46,9 +48,14 @@ class SSLDataModule(L.LightningDataModule):
         self.crop_scale = crop_scale
 
     def setup(self, stage: str | None = None) -> None:
-        train_base = UPennGBMDataset(self.config, partition="train")
-        val_base = UPennGBMDataset(self.config, partition="val")
-        test_base = UPennGBMDataset(self.config, partition="test")
+        # For SSL, force no missing-data masking — SSL needs full images
+        ssl_config = copy(self.config)
+        ssl_config.masked_train = False
+        ssl_config.masked_test = False
+
+        train_base = UPennGBMDataset(ssl_config, partition="train")
+        val_base = UPennGBMDataset(ssl_config, partition="val")
+        test_base = UPennGBMDataset(ssl_config, partition="test")
         combined = torch.utils.data.ConcatDataset([train_base, val_base, test_base])
         aug = MRIAugmentPipeline(vol_size=self.vol_size, noise_std=self.noise_std, crop_scale=self.crop_scale)
         self.train_ds = SSLImageDataset(combined, TwoViewTransform(aug))

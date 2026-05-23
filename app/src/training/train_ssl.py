@@ -24,6 +24,7 @@ def _build_ssl_module(CONFIG: Configuration) -> SSLPretrainingLightningModule:
         num_heads=CONFIG.ssl_num_heads,
         dropout=CONFIG.ssl_dropout,
         vol_size=CONFIG.ssl_vol_size,
+        pos_embed=CONFIG.pos_embed,
     )
 
 
