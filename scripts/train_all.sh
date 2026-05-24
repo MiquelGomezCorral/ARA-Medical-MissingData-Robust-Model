@@ -24,20 +24,46 @@ run_exp() {
     $2
 }
 
-run_exp "No Masks - Emb D1 - No Radiomics - No D Dropout" \
-"python main.py train --base_name 'No_Masks'"
+# run_exp "No Masks - Emb D1 - No Radiomics - No D Dropout" \
+# "python main.py train --base_name 'No_Masks'"
 
-run_exp "All masks - Emb D1 - No Radiomics - No D Dropout" \
-"python main.py train -mts -mtr --base_name 'All_masks'"
+#  - Test F1 Score:  0.6695
+#  - Test Precision: 0.6801
+#  - Test Recall:    0.6721
+#  - Test Accuracy:  0.6721
 
-run_exp "All masks - Emb D3 - No Radiomics - No D Dropout" \
-"python main.py train -mts -mtr --pos_embed 3d --base_name 'All_masks-Emb_D3'"
 
-run_exp "All masks - Emb D1 - Radiomics - No D Dropout" \
-"python main.py train -mts -mtr --use_radiomics --base_name 'All_masks-Radiomics'"
+
+# run_exp "All masks - Emb D1 - No Radiomics - No D Dropout" \
+# "python main.py train -mts -mtr --base_name 'All_masks'"
+#  - Test F1 Score:  0.5657
+#  - Test Precision: 0.6226
+#  - Test Recall:    0.5902
+#  - Test Accuracy:  0.5902
+
+
+# run_exp "All masks - Emb D3 - No Radiomics - No D Dropout" \
+# "python main.py train -mts -mtr --pos_embed 3d --base_name 'All_masks-Emb_D3'"
+#  - Test F1 Score:  0.5657
+#  - Test Precision: 0.6226
+#  - Test Recall:    0.5902
+#  - Test Accuracy:  0.5902
+
+# run_exp "All masks - Emb D1 - Radiomics - No D Dropout" \
+# "python main.py train -mts -mtr --use_radiomics --base_name 'All_masks-Radiomics'"
+
+#  - Test F1 Score:  0.6199
+#  - Test Precision: 0.6253
+#  - Test Recall:    0.6230
+#  - Test Accuracy:  0.6230
 
 run_exp "All masks - Emb D1 - No Radiomics - D Dropout" \
 "python main.py train -mts -mtr --dynamic_dropout --base_name 'All_masks-D_Dropout'"
+
+#  - Test F1 Score:  0.7209
+#  - Test Precision: 0.7239
+#  - Test Recall:    0.7213
+#  - Test Accuracy:  0.7213
 
 
 echo -e "\n${BLUE}========================================================${NC}"

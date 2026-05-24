@@ -31,6 +31,12 @@ class UPennGBMDataset(Dataset):
         self.dropout_reference, self.dropout_by_id = self._load_dropout_data()
         self.process_tabular()
         self.radiomic = self._load_radiomic_data()
+        self._unknown_groups = [
+            ("KPS",   ["KPS_High", "KPS_Low", "KPS_Unk"]),
+            ("IDH1",  ["IDH1_Mutated", "IDH1_Wildtype", "IDH1_Unk"]),
+            ("MGMT",  ["MGMT_Methylated", "MGMT_Unmethylated", "MGMT_Unk"]),
+            ("GTR",   ["GTR_Y", "GTR_N", "GTR_Unk"]),
+        ]
     
 
         self.cache = {}
@@ -60,6 +66,16 @@ class UPennGBMDataset(Dataset):
             dtype=torch.float32
         )
         tabular_mask = torch.ones(len(self.tabular_cols), dtype=torch.float32)
+        for group_name, group_columns in self._unknown_groups:
+            unk_col = f"{group_name}_Unk"
+            if unk_col in self.tabular_cols:
+                unk_idx = self.tabular_cols.index(unk_col)
+                if tabular_values[unk_idx] == 1.0:
+                    for col in group_columns:
+                        if col in self.tabular_cols:
+                            idx = self.tabular_cols.index(col)
+                            tabular_values[idx] = 0.0
+                            tabular_mask[idx] = 0.0
         tabular_values, tabular_mask = self._apply_tabular_mask(pid, tabular_values, tabular_mask)
         label = torch.tensor(
             patient_row[self.label_cols],
