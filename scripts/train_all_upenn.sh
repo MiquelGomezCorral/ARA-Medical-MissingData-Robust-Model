@@ -47,6 +47,7 @@ run_exp "All masks - Emb D1 - Radiomics - No D Dropout" \
 "python main.py train --ssl_dataset upenn -mts -mtr --use_radiomics --base_name 'All_masks-Radiomics'"
 
 
+
 run_exp "All masks - Emb D1 - No Radiomics - D Dropout" \
 "python main.py train --ssl_dataset upenn -mts -mtr --dynamic_dropout --base_name 'All_masks-D_Dropout'"
 

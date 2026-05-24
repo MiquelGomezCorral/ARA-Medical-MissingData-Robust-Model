@@ -41,7 +41,7 @@ if __name__ == "__main__":
     # ======================================================================================
     p_train_model = subparsers.add_parser("train", help="Train SSL, survival, or both")
     # p_train_model.add_argument("--stage", type=str, choices=("ssl", "survival", "both"), default="survival", help="Which training stage to run")
-    p_train_model.add_argument("--base_name", type=str, default="default", help="Base name for the experiment")
+    p_train_model.add_argument("--exp_name", type=str, default="default", help="Base name for the experiment")
 
     p_train_model.add_argument("-mtr", '--masked_train', default=False, action="store_true", help="Enable missing data masking during training")
     p_train_model.add_argument("-mts", '--masked_test', default=False, action="store_true", help="Enable missing data masking during test")
@@ -53,7 +53,7 @@ if __name__ == "__main__":
     p_train_model.add_argument("--dynamic_dropout", action="store_true", help="Enable dynamic train-time dropout (default: False = static JSON)")
     p_train_model.add_argument("--ssl_checkpoint_name", type=str, default="ssl_checkpoint.pt", help="Filename used when saving the SSL checkpoint")
     p_train_model.add_argument("--ssl_checkpoint", type=str, default=None, help="Optional SSL checkpoint filename to load into the survival model")
-    p_train_model.add_argument("--ssl_epochs", type=int, default=30, help="Number of SSL epochs")
+    p_train_model.add_argument("--ssl_epochs", type=int, default=1, help="Number of SSL epochs")
     p_train_model.add_argument("--ssl_batch_size", type=int, default=32, help="SSL batch size")
     p_train_model.add_argument("--ssl_learning_rate", type=float, default=1e-4, help="SSL learning rate")
     p_train_model.add_argument("--ssl_weight_decay", type=float, default=1e-4, help="SSL weight decay")
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     p_train_model.add_argument("--ssl_noise_std", type=float, default=0.05, help="SSL augmentation noise std")
     p_train_model.add_argument("--ssl_crop_scale", type=float, default=0.85, help="SSL random crop scale")
     p_train_model.add_argument("--checkpoint_name", type=str, default="survival_checkpoint.pt", help="Filename used when saving the survival checkpoint")
-    p_train_model.add_argument("--survival_epochs", type=int, default=20, help="Number of survival training epochs")
+    p_train_model.add_argument("--survival_epochs", type=int, default=1, help="Number of survival training epochs")
     p_train_model.add_argument("--survival-batch-size", type=int, default=16, help="Survival batch size")
     p_train_model.add_argument("--learning_rate", type=float, default=1e-4, help="Survival learning rate")
     p_train_model.add_argument("--weight_decay", type=float, default=1e-4, help="Survival weight decay")

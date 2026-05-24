@@ -24,25 +24,23 @@ run_exp() {
     $2
 }
 
-run_exp "No Masks - Emb D1 - No Radiomics - D Dropout" \
-"python main.py train -mts -mtr --dynamic_dropout --base_name 'No_Masks-D_Dropout'"
+# run_exp "No Masks - Emb D1 - No Radiomics - D Dropout" \
+# "python main.py train -mts -mtr --dynamic_dropout --base_name 'No_Masks-D_Dropout'"
 
 
 # ======================================================================
 
-run_exp "All masks - Emb D1 - No Radiomics - D Dropout" \
-"python main.py train --ssl_dataset upenn -mts -mtr --dynamic_dropout --base_name 'All_masks-D_Dropout'"
-
-run_exp "All masks - Emb D3 - No Radiomics - D Dropout" \
-"python main.py train --ssl_dataset upenn -mts -mtr --dynamic_dropout --pos_embed 3d --base_name 'All_masks-Emb_D3-D_Dropout'"
+# run_exp "All masks - Emb D1 - No Radiomics - D Dropout" \
+# "python main.py train --ssl_dataset upenn -mts -mtr --dynamic_dropout --base_name 'All_masks-D_Dropout'"
 
 
 
-run_exp "All masks - Emb D1 - Radiomics - D Dropout" \
-"python main.py train --ssl_dataset upenn -mts -mtr --dynamic_dropout --use_radiomics --base_name 'All_masks-Radiomics-D_Dropout'"
+# run_exp "All masks - Emb D1 - Radiomics - D Dropout" \
+# "python main.py train --ssl_dataset upenn -mts -mtr --dynamic_dropout --use_radiomics --base_name 'All_masks-Radiomics-D_Dropout'"
 
-run_exp "All masks - Emb D3 - Radiomics - D Dropout" \
-"python main.py train --ssl_dataset upenn -mts -mtr --dynamic_dropout --pos_embed 3d --use_radiomics --base_name 'All_masks-Emb_D3-Radiomics-D_Dropout'"
+run_exp "All masks - Emb D1 - Radiomics - No D Dropout" \
+"python main.py train --ssl_dataset upenn -mts -mtr --use_radiomics --base_name 'All_masks-Radiomics'"
+
 
 
 

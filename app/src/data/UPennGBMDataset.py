@@ -13,13 +13,16 @@ class UPennGBMDataset(Dataset):
         bins = [0, 180, 365, 730, float('inf')]
         labels = [0, 1, 2, 3] # Short, Mid, Long, Exceptional
     '''
-    def __init__(self, CONFIG: Configuration, transform=None, partition='train', cache=False):
+    def __init__(self, CONFIG: Configuration, transform=None, partition='train', cache=False, apply_mask=None):
         self.CONFIG = CONFIG
 
         self.transform = transform
         self.partition = partition
 
-        self.apply_mask = CONFIG.masked_train if partition == 'train' else CONFIG.masked_test
+        if apply_mask is not None:
+            self.apply_mask = apply_mask
+        else:
+            self.apply_mask = CONFIG.masked_train if partition == 'train' else CONFIG.masked_test
 
         self.tensor_dir = CONFIG.mr_nf_tensors_96
         self.mr_data = CONFIG.mr_data
