@@ -53,6 +53,8 @@ class Configuration:
     exp_name: str = "base_name"
     seed:     int = 42
 
+    create_folders: bool = True
+
     bins = [0, 365, float('inf')]
       # bins = [0, 180, 365, 730, float('inf')]
     # labels = [0, 1, 2, 3] # Short, Mid, Long, Exceptional
@@ -111,8 +113,9 @@ class Configuration:
         timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         session_id = f"{self.exp_name}_{timestamp}"
         self.MODELS_PATH = os.path.join(self.MODELS_PATH, session_id)
-        self.LOGS_PATH = os.path.join(self.LOGS_PATH, session_id)
-        make_dirs([self.MODELS_PATH, self.LOGS_PATH])
+        self.LOGS_PATH = os.path.join(self.LOGS_PATH, session_id)#
+        if self.create_folders:
+            make_dirs([self.MODELS_PATH, self.LOGS_PATH])
 
         if self.yaml_config_name:
             self._load_yaml_configuration(self.yaml_config_name)
