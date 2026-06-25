@@ -12,6 +12,15 @@ descriptionLong:
     Modelo médico para predicción robusta de supervivencia en glioblastoma. Primera etapa: pre-entrenamiento auto-supervisado (SSL) sobre el dataset BraTS de segmentación de tumores cerebrales, aprendiendo representaciones genéricas de imagen 3D. Segunda etapa: fine-tuning del encoder pre-entrenado para predecir tiempo de supervivencia usando el dataset UPenn-GBM con datos clínicos y de imagen multimodal (NIfTI). Tercera etapa: evaluación sobre particiones predefinidas. La arquitectura usa PyTorch con aceleración automática GPU, sistema de configuración YAML con dataclass, early stopping, checkpointing automático, y seeding determinista. Orientado a manejar datos faltantes (missing data) en entornos clínicos reales.
 technologies: [python, pytorch, jupyter, numpy]
 tags: [class]
+logo: readme-images/UPENN-GBM-00465.gif
+screenShoots:
+  - readme-images/UPENN-GBM-00465.gif
+  - readme-images/final.png
+  - readme-images/gomaa_architecture.png
+  - readme-images/init.png
+  - readme-images/newplot.png
+  - readme-images/radiomic_segmentation.png
 slug: ARA-Medical-MissingData-Robust-Model
 order: 82
 featured: false
+
