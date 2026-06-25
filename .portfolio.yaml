@@ -1,6 +1,6 @@
 title:
-  en: "Missing-Data-Robust Medical Imaging Model: SSL Pretraining + Survival Prediction"
-  es: "Modelo Robusto ante Datos Faltantes para Imagen Médica: SSL + Supervivencia"
+  en: "Missing-Data-Robust Medical Imaging Model"
+  es: "Modelo Robusto ante Datos Faltantes Imagen Médica"
 finished: finished
 descriptionShort:
   en: "3-stage pipeline: self-supervised pretraining on BraTS (brain tumor segmentation), survival prediction training on UPenn-GBM (glioblastoma), and testing. Uses deep learning architecture with YAML config, editable install, and multi-GPU support via PyTorch Accelerator."
