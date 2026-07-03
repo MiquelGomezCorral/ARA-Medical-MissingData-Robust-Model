@@ -13,6 +13,7 @@ descriptionLong:
 technologies: [ai, jupyter, latex, numpy, pandas, plotly, python, pytorch, sklearn]
 tags: [class]
 logo: readme-images/final_169.png
+gif: readme-images/UPENN-GBM-00465.gif
 screenShoots:
   - readme-images/final_169.png
   - readme-images/gomaa_architecture_169.png
@@ -28,7 +29,6 @@ keywords:
 slug: ARA-Medical-MissingData-Robust-Model
 relevancy: 75
 featured: false
-
 
 
 
