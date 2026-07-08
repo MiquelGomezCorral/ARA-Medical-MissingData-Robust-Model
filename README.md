@@ -110,9 +110,9 @@ Link: Añade aquí el link a tu dataset
 ## Gallery
 
 <p align="center">
+  <img src="readme-images/UPENN-GBM-00465.gif" width="48%" />
   <img src="readme-images/final_169.png" width="48%" />
   <img src="readme-images/gomaa_architecture_169.png" width="48%" />
   <img src="readme-images/init_169.png" width="48%" />
-  <img src="readme-images/newplot_169.png" width="48%" />
 </p>
 <!-- portfolio-gallery:end -->
