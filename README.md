@@ -110,9 +110,12 @@ Link: Añade aquí el link a tu dataset
 ## Gallery
 
 <p align="center">
-  <img src="readme-images/UPENN-GBM-00465.gif" width="48%" />
-  <img src="readme-images/final_169.png" width="48%" />
-  <img src="readme-images/gomaa_architecture_169.png" width="48%" />
-  <img src="readme-images/init_169.png" width="48%" />
+  <img src="readme-images/UPENN-GBM-00465.gif" alt="UPENN GBM 00465" width="48%" />
+  <img src="readme-images/final_169.png" alt="final" width="48%" />
+  <img src="readme-images/frame_062_delay-0.03s.png" alt="frame 062 delay 0.03s" width="48%" />
+  <img src="readme-images/gomaa_architecture_169.png" alt="gomaa architecture" width="48%" />
+  <img src="readme-images/init_169.png" alt="init" width="48%" />
+  <img src="readme-images/newplot_169.png" alt="newplot" width="48%" />
+  <img src="readme-images/radiomic_segmentation_169.png" alt="radiomic segmentation" width="48%" />
 </p>
 <!-- portfolio-gallery:end -->
